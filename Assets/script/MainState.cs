@@ -37,12 +37,14 @@ public class MainState : MonoBehaviour {
 	private Side _turn = Side.Self;
 	private GameState _gameState = GameState.WaitingPutPawn;
 	private bool _paused;
-	private GameMode _gameMode = GameMode.Self;
+	private GameMode _gameMode = GameMode.AI;
 	private PawnType[] _nextPawnTypes = new PawnType[(int)Side.Count];
+	private Pawn[] _lastPutPawns = new Pawn[(int)Side.Count];
 	private int _score;
 	private int _combo;
-	private int _trashChance; 		// chance to cancel opposite's last pawn
-	private int _backwardsChance; 	// chance to cancel opposite's last pawn
+	private int _trashChance; 			// chance to cancel opposite's last pawn
+	private int _backwardsChance; 		// chance to cancel opposite's last pawn
+	private int _lastUsedBackwardsLock;
 
 	class Pawn {
 		public int gridIndex;
@@ -98,7 +100,9 @@ public class MainState : MonoBehaviour {
 					int gridIndex = getRandomEmptyPawnGridIndex();
 					if (gridIndex >= 0) {
 						Vector2 gridPos = gridIndexToPos(gridIndex);
-						if (putPawn((int)gridPos.x, (int)gridPos.y, _nextPawnTypes[(int)_turn])) {
+						Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, _nextPawnTypes[(int)_turn]);
+						if (pawn != null) {
+							_lastPutPawns[(int)_turn] = pawn;
 							prepareNextPawn(_turn);
 							_turn = Side.Self;
 						}
@@ -115,7 +119,15 @@ public class MainState : MonoBehaviour {
 					Vector3 worldPos = this.camera.ScreenToWorldPoint(Input.mousePosition);
 					Vector2 gridIndice;
 					if (convertActualPosToIndex(worldPos, out gridIndice)) {
-						if (putPawn((int)gridIndice.x, (int)gridIndice.y, _nextPawnTypes[(int)_turn])) {
+						Pawn pawn = putPawn((int)gridIndice.x, (int)gridIndice.y, _nextPawnTypes[(int)_turn]);
+						if (pawn != null) {
+							if (_turn == Side.Self) {
+								if (_lastUsedBackwardsLock > 0) {
+									--_lastUsedBackwardsLock;
+								}
+							}
+
+							_lastPutPawns[(int)_turn] = pawn;
 							prepareNextPawn(_turn);
 							_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
 						}
@@ -140,8 +152,28 @@ public class MainState : MonoBehaviour {
 		gameMainUI.GetComponent<GraphicRaycaster>().enabled = !value;
 	}
 
+	// revert AI and self last pawn and reput my pawn
 	public void onBtnBackwards() {
-		Debug.Log("onBtnBackwards");
+		if (_lastUsedBackwardsLock > 0 || _gameMode != GameMode.AI || _backwardsChance <= 0) {
+			return;
+		}
+
+		bool use = false;
+		if (_lastPutPawns[(int)Side.Opposite] != null) {
+			destroyPawn(_lastPutPawns[(int)Side.Opposite], true, "playEliminateAnim");
+			use = true;
+		}
+
+		if (_lastPutPawns[(int)Side.Self] != null) {
+			destroyPawn(_lastPutPawns[(int)Side.Self], true, "playEliminateAnim");
+			use = true;
+		}
+
+		if (use) {
+			--_backwardsChance;
+			invalidUI();
+			_lastUsedBackwardsLock = 2;
+		}
 	}
 
 	public void onBtnQuit() {
@@ -149,6 +181,7 @@ public class MainState : MonoBehaviour {
 		Instantiate(startMenuPrefab);
 	}
 
+	// select and drop a self pawn 
 	public void onBtnTrash() {
 		Debug.Log("onBtnTrash");
 	}
@@ -158,22 +191,39 @@ public class MainState : MonoBehaviour {
 	}
 
 	#region game logic
-	private int getRandomEmptyPawnGridIndex(int maxIteration = 10) {
+	private int getRandomEmptyPawnGridIndex(int maxIteration = 8) {
+		float dirProb = Random.Range(0.0f, 1.0f);
 		maxIteration = Random.Range(1, maxIteration);
 		int interation = 0;
 		int index = 0;
 		int gridLength = _grids.Length;
 		int foundIndex = -1;
-		while (index < gridLength) {
-			if (_grids[index] == null) {
-				++interation;
-				if (interation >= maxIteration) {
-					foundIndex = index;
-					break;
-				}
-			}
 
-			++index;
+		if (dirProb < 0.5) {
+			while (index < gridLength) {
+				if (_grids[index] == null) {
+					++interation;
+					if (interation >= maxIteration) {
+						foundIndex = index;
+						break;
+					}
+				}
+				
+				index += Random.Range(1, 5);
+			}
+		} else {
+			index = gridLength - 1;
+			while (index >= 0) {
+				if (_grids[index] == null) {
+					++interation;
+					if (interation >= maxIteration) {
+						foundIndex = index;
+						break;
+					}
+				}
+				
+				index -= Random.Range(1, 5);
+			}
 		}
 
 		return foundIndex;
@@ -210,11 +260,11 @@ public class MainState : MonoBehaviour {
 		);
 	}
 
-	private bool putPawn(int gridX, int gridY, PawnType type) {
+	private Pawn putPawn(int gridX, int gridY, PawnType type) {
 		Pawn pawnAtPos = getPawnAtPos(gridX, gridY);
 		if (pawnAtPos != null) {
 			Debug.LogWarning("already have pawn at pos: " + new Vector2(gridX, gridY));
-			return false;
+			return null;
 		}
 
 		int gridIndex = gridY * BoardWidth + gridX;
@@ -236,7 +286,7 @@ public class MainState : MonoBehaviour {
 		_grids[gridIndex] = pawn;
 
 		updateScenePawnState(pawn);
-		return true;
+		return pawn;
 	}
 
 	Vector2[] NEIGHBOR_GRID_OFFSETS = new Vector2[]{
@@ -310,8 +360,7 @@ public class MainState : MonoBehaviour {
 			invalidUI();
 
 			foreach (Pawn pawn in pawnList) {
-				pawn.obj.SendMessage("playEliminateAnim");
-				destroyPawn(pawn, true);
+				destroyPawn(pawn, true, "playEliminateAnim");
 			}
 
 			pawnList.Clear();
@@ -646,7 +695,7 @@ public class MainState : MonoBehaviour {
 		}
 	}
 
-	private void destroyPawn(Pawn pawn, bool justUnRef = false) {
+	private void destroyPawn(Pawn pawn, bool justUnRef = false, string message = "", object msgParam = null) {
 		if (pawn == null) {
 			return;
 		}
@@ -655,6 +704,10 @@ public class MainState : MonoBehaviour {
 		_grids[pawn.gridIndex] = null;
 		if (!justUnRef) {
 			Destroy(pawn.obj);
+		} else {
+			if (message.Length > 0) {
+				pawn.obj.SendMessage(message, msgParam);
+			}
 		}
 
 		pawn.obj = null;
@@ -687,6 +740,8 @@ public class MainState : MonoBehaviour {
 		}
 
 		_nextPawnImage.sprite = nextPawnType == PawnType.Black ? blackPawn : whitePawn;
+		gameMainUI.transform.Find("BtnBack/Count").GetComponent<Text>().text = _backwardsChance.ToString();
+		gameMainUI.transform.Find("BtnTrash/Count").GetComponent<Text>().text = _trashChance.ToString();
 	}
 
 	#endregion
