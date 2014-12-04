@@ -227,8 +227,8 @@ RectTransform:
   m_RootOrder: 3
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 28.8380814, y: -69.481308}
-  m_SizeDelta: {x: 42.9140358, y: 20.2128906}
+  m_AnchoredPosition: {x: 27.573, y: -69.5}
+  m_SizeDelta: {x: 44.4000015, y: 20.2000008}
   m_Pivot: {x: .5, y: .5}
 --- !u!114 &246515933
 MonoBehaviour:
@@ -425,8 +425,8 @@ RectTransform:
   m_RootOrder: 7
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 49.6922455, y: -69.4257812}
-  m_SizeDelta: {x: -160.563156, y: 20}
+  m_AnchoredPosition: {x: 52.7999992, y: -69.4000015}
+  m_SizeDelta: {x: -163.699997, y: 20}
   m_Pivot: {x: 0, y: .5}
 --- !u!114 &542986700
 MonoBehaviour:
@@ -964,6 +964,8 @@ MonoBehaviour:
   blackPawn: {fileID: 21300000, guid: 4d594801f256347e3aa8777e614dfa56, type: 3}
   startMenuPrefab: {fileID: 100014, guid: 7dbad172a9bd34431974857df6df2051, type: 2}
   gameMainUI: {fileID: 1160298162}
+  TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE: 4
+  BACKWARDS_GAIN_ELIMINATE_ROW_PER_MOVE: 2
   ADJACENT_COUNT_TO_ELIMINATE: 3
 --- !u!4 &1422836608
 Transform:
@@ -1386,7 +1388,7 @@ RectTransform:
   m_RootOrder: 2
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 28.5800152, y: -39.1694298}
+  m_AnchoredPosition: {x: 27.573, y: -39.2529984}
   m_SizeDelta: {x: 42.3851242, y: 21.0950279}
   m_Pivot: {x: .5, y: .5}
 --- !u!1 &2052500061
@@ -1420,8 +1422,8 @@ RectTransform:
   m_RootOrder: 5
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 49.6967583, y: -39.4583588}
-  m_SizeDelta: {x: -76.8809433, y: 20.5999985}
+  m_AnchoredPosition: {x: 52.7999992, y: -39.5}
+  m_SizeDelta: {x: -79.9840012, y: 20.6000004}
   m_Pivot: {x: 0, y: .5}
 --- !u!114 &2052500063
 MonoBehaviour:
