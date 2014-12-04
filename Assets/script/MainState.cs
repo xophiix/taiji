@@ -1,11 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class MainState : MonoBehaviour {
 	public Object BlackPawnPrefab;
 	public Object WhitePawnPrefab;
 	public GameObject ChessBoard;
-
 	public int BoardWidth = 8;
 	public int BoardHeight = 8;
 
@@ -16,6 +16,13 @@ public class MainState : MonoBehaviour {
 		GameOver
 	};
 
+	public enum GameMode {
+		AI,
+		Self,
+		Player,
+		Count
+	};
+
 	public enum PawnType {
 		Black,
 		White
@@ -23,15 +30,19 @@ public class MainState : MonoBehaviour {
 	
 	public enum Side {
 		Self,
-		Opposite
+		Opposite,
+		Count
 	};
 
 	private Side _turn = Side.Self;
 	private GameState _gameState = GameState.WaitingPutPawn;
-	private PawnType _myType;
-	private PawnType _oppoType;	
+	private bool _paused;
+	private GameMode _gameMode = GameMode.Self;
+	private PawnType[] _nextPawnTypes = new PawnType[(int)Side.Count];
 	private int _score;
-	private int _nextPawn;
+	private int _combo;
+	private int _trashChance; 		// chance to cancel opposite's last pawn
+	private int _backwardsChance; 	// chance to cancel opposite's last pawn
 
 	class Pawn {
 		public int gridIndex;
@@ -46,47 +57,67 @@ public class MainState : MonoBehaviour {
 	private Pawn[] _grids;
 
 	class BoardLayout {
-		public Vector2 origin = new Vector2 ();
-		public Vector2 size = new Vector2 ();
-		public Vector2 gridSize = new Vector2 ();
+		public Vector2 origin = new Vector2();
+		public Vector2 size = new Vector2();
+		public Vector2 gridSize = new Vector2();
 	};
 
 	private BoardLayout _boardLayout = new BoardLayout();
 
+	// ui
+	private Text _scoreText;
+	private Text _comboText;
+	private Image _nextPawnImage;
+	public Sprite whitePawn;
+	public Sprite blackPawn;
+	private bool _uiInvalid = true;
+
+	public GameObject startMenuPrefab;
+	public GameObject gameMainUI;
+
 	// Use this for initialization
 	void Start () {
-		initScene();
+		init();
 	}
 
 	// Update is called once per frame
 	void Update () {
-		if (_gameState == GameState.WaitingPutPawn) {
-			if (_turn == Side.Opposite) {
-				/*int gridIndex = getRandomEmptyPawnGridIndex();
-				Debug.Log("getRandomEmptyPawnGridIndex return " + gridIndex);
-				if (gridIndex >= 0) {
-					Vector2 gridPos = gridIndexToPos(gridIndex);
-					if (putPawn((int)gridPos.x, (int)gridPos.y, _oppoType)) {
-						_turn = Side.Self;
-					}
-				}*/
+		if (_uiInvalid) {
+			updateUI();
+			_uiInvalid = false;
+		}
 
-				if (Input.anyKeyDown) {
-					Vector3 worldPos = this.camera.ScreenToWorldPoint(Input.mousePosition);
-					Vector2 gridIndice;
-					if (convertActualPosToIndex(worldPos, out gridIndice)) {
-						if (putPawn((int)gridIndice.x, (int)gridIndice.y, _oppoType)) {
+		if (_paused) {
+			return;
+		}
+
+		if (_gameState == GameState.WaitingPutPawn) {
+			bool waitInput = false;
+			if (_turn == Side.Opposite) {
+				if (_gameMode == GameMode.AI) {
+					int gridIndex = getRandomEmptyPawnGridIndex();
+					if (gridIndex >= 0) {
+						Vector2 gridPos = gridIndexToPos(gridIndex);
+						if (putPawn((int)gridPos.x, (int)gridPos.y, _nextPawnTypes[(int)_turn])) {
+							prepareNextPawn(_turn);
 							_turn = Side.Self;
 						}
-					};
+					}
+				} else if (_gameMode == GameMode.Self){
+					waitInput = true;
 				}
 			} else {
+				waitInput = true;
+			}
+
+			if (waitInput) {
 				if (Input.anyKeyDown) {
 					Vector3 worldPos = this.camera.ScreenToWorldPoint(Input.mousePosition);
 					Vector2 gridIndice;
 					if (convertActualPosToIndex(worldPos, out gridIndice)) {
-						if (putPawn((int)gridIndice.x, (int)gridIndice.y, _myType)) {
-							_turn = Side.Opposite;
+						if (putPawn((int)gridIndice.x, (int)gridIndice.y, _nextPawnTypes[(int)_turn])) {
+							prepareNextPawn(_turn);
+							_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
 						}
 					};
 				}
@@ -94,15 +125,40 @@ public class MainState : MonoBehaviour {
 		}
 	}
 
-	void OnGUI() {
-
+	private void prepareNextPawn(Side side) {
+		float prob = Random.Range(0.0f, 1.0f);
+		_nextPawnTypes[(int)side] = prob > 0.5 ? PawnType.Black : PawnType.White;
+		invalidUI();
 	}
 
-	void FixedUpdate() {
+	private void pause(bool value) {
+		if (_paused == value) {
+			return;
+		}
 
+		_paused = value;
+		gameMainUI.GetComponent<GraphicRaycaster>().enabled = !value;
 	}
 
-	private int getRandomEmptyPawnGridIndex(int maxIteration = 5) {
+	public void onBtnBackwards() {
+		Debug.Log("onBtnBackwards");
+	}
+
+	public void onBtnQuit() {
+		pause (true);
+		Instantiate(startMenuPrefab);
+	}
+
+	public void onBtnTrash() {
+		Debug.Log("onBtnTrash");
+	}
+
+	private void invalidUI() {
+		_uiInvalid = true;
+	}
+
+	#region game logic
+	private int getRandomEmptyPawnGridIndex(int maxIteration = 10) {
 		maxIteration = Random.Range(1, maxIteration);
 		int interation = 0;
 		int index = 0;
@@ -171,6 +227,8 @@ public class MainState : MonoBehaviour {
 		Object prefab = type == PawnType.Black ? BlackPawnPrefab : WhitePawnPrefab;
 		Vector2 posInChessBoard = convertIndexToActualPos(gridX, gridY);
 		GameObject pawnObject = (GameObject)Instantiate(prefab, new Vector3(posInChessBoard.x, posInChessBoard.y, 0), Quaternion.identity);
+		pawnObject.transform.SetParent(ChessBoard.transform);
+
 		pawn.obj = pawnObject;
 		updatePawnDisplay(pawn);
 
@@ -222,10 +280,35 @@ public class MainState : MonoBehaviour {
 		return _grids[index];
 	}
 
+	private int calculateScore(ArrayList adjacentPawnList) {
+		// score = typeCount * 2 ^ (N - 3);
+		bool[] typeFlag = new bool[9];
+		int typeCount = 0;
+
+		foreach (Pawn pawn in adjacentPawnList) {
+			int neighborOppositeCount = pawn.neighborOppositeCount;
+			if (!typeFlag[neighborOppositeCount]) {
+				typeFlag[neighborOppositeCount] = true;
+				++typeCount;
+			}
+		}
+
+		int score = typeCount;
+		if (adjacentPawnList.Count > ADJACENT_COUNT_TO_ELIMINATE) {
+			score *= (int)Mathf.Pow(2, adjacentPawnList.Count - ADJACENT_COUNT_TO_ELIMINATE);
+		}
+
+		return score;
+	}
+
 	private IEnumerator eliminateAdjacentPawns() {
 		_gameState = GameState.JudgingElimination;
 		for (int i = 0; i < _pawnListToEliminate.Count; ++i) {
 			ArrayList pawnList = (ArrayList)_pawnListToEliminate[i];
+			_score += calculateScore(pawnList);
+			++_combo;
+			invalidUI();
+
 			foreach (Pawn pawn in pawnList) {
 				pawn.obj.SendMessage("playEliminateAnim");
 				destroyPawn(pawn, true);
@@ -283,6 +366,8 @@ public class MainState : MonoBehaviour {
 			Invoke("startEliminateAdjacentPawns", 0.3f);
 		} else {
 			_gameState = GameState.WaitingPutPawn;
+			_combo = 0;
+			invalidUI();
 		}
 	}
 
@@ -440,7 +525,7 @@ public class MainState : MonoBehaviour {
 		}
 	}
 
-	private void initScene() {
+	private void init() {
 		Bounds boardBounds = ChessBoard.renderer.bounds;
 		_boardLayout.origin.Set(boardBounds.min.x, boardBounds.min.y);
 		_boardLayout.size.Set(boardBounds.size.x, boardBounds.size.y);
@@ -453,8 +538,35 @@ public class MainState : MonoBehaviour {
 
 		initTraverseIndice();
 
-		_myType = PawnType.Black;
-		_oppoType = PawnType.White;
+		prepareNextPawn(Side.Self);
+		prepareNextPawn(Side.Opposite);
+
+		_scoreText = gameMainUI.transform.Find("Score").GetComponent<Text>();
+		_comboText = gameMainUI.transform.Find("Combo").GetComponent<Text>();
+		_nextPawnImage = gameMainUI.transform.Find("NextPawn").GetComponent<Image>();
+	}
+
+	private void restart(Hashtable parameters) {
+		while (_pawns.Count > 0) {
+			destroyPawn((Pawn)_pawns[_pawns.Count - 1]);
+		}
+
+		_pawnListToEliminate.Clear();
+		_pawns.Clear();
+
+		_backwardsChance = 0;
+		_trashChance = 0;
+		_score = 0;
+		_combo = 0;
+		_gameState = GameState.WaitingPutPawn;
+		_gameMode = GameMode.Self;
+		_turn = Side.Self;
+
+		pause(false);
+		invalidUI();
+
+		prepareNextPawn(Side.Self);
+		prepareNextPawn(Side.Opposite);
 	}
 
 	private void initTraverseIndice() {
@@ -542,7 +654,7 @@ public class MainState : MonoBehaviour {
 		_pawns.Remove(pawn);
 		_grids[pawn.gridIndex] = null;
 		if (!justUnRef) {
-			Destroy (pawn.obj);
+			Destroy(pawn.obj);
 		}
 
 		pawn.obj = null;
@@ -562,4 +674,20 @@ public class MainState : MonoBehaviour {
 			mark.transform.localPosition = new Vector3(markPos.x, markPos.y, 0);
 		}
 	}
+
+	private void updateUI() {
+		_scoreText.text = _score.ToString();
+		_comboText.text = _combo.ToString();
+
+		PawnType nextPawnType;
+		if (_gameMode == GameMode.Self) {
+			nextPawnType = _nextPawnTypes[(int)_turn];
+		} else {
+			nextPawnType = _nextPawnTypes[(int)Side.Self];
+		}
+
+		_nextPawnImage.sprite = nextPawnType == PawnType.Black ? blackPawn : whitePawn;
+	}
+
+	#endregion
 }
