@@ -35,6 +35,11 @@ public class MainState : MonoBehaviour {
 		Count
 	};
 
+	public GameMode gameMode {
+		get { return _gameMode; }
+		set { _gameMode = value; }
+	}
+
 	private Side _turn = Side.Self;
 	private GameState _gameState = GameState.WaitingPutPawn;
 	private bool _paused;
@@ -721,7 +726,7 @@ public class MainState : MonoBehaviour {
 		_score = 0;
 		_combo = 0;
 		_gameState = GameState.WaitingPutPawn;
-		_gameMode = GameMode.Self;
+		_gameMode = parameters.Contains("gameMode") ? (GameMode)parameters["gameMode"] : GameMode.AI;
 		_turn = Side.Self;
 
 		resetEliminateStats(_turn);
