@@ -56,7 +56,18 @@ public class MainState : MonoBehaviour {
 		public int gridIndex;
 		public Vector2 gridPos = new Vector2();
 		public PawnType type;
-		public int neighborOppositeCount;
+		private int _neighborOppositeCount;
+
+		public int neighborOppositeCount {
+			get { return _neighborOppositeCount; }
+			set {
+				_neighborOppositeCount = value;
+				if (this.obj != null) {
+					this.obj.SendMessage("setNeighborCountMark", value);
+				}
+			}
+		}
+
 		public GameObject obj;
 		public Side side;
 	};
@@ -298,7 +309,6 @@ public class MainState : MonoBehaviour {
 	private Pawn putPawn(int gridX, int gridY, PawnType type, Side side) {
 		Pawn pawnAtPos = getPawnAtPos(gridX, gridY);
 		if (pawnAtPos != null) {
-			Debug.LogWarning("already have pawn at pos: " + new Vector2(gridX, gridY));
 			return null;
 		}
 
@@ -308,15 +318,13 @@ public class MainState : MonoBehaviour {
 		pawn.gridPos = gridIndexToPos(gridIndex);
 		pawn.type = type;
 		pawn.side = side;
-		pawn.neighborOppositeCount = getNeighborOppoCount(type, pawn.gridPos);
 
 		Object prefab = type == PawnType.Black ? BlackPawnPrefab : WhitePawnPrefab;
 		Vector2 posInChessBoard = convertIndexToActualPos(gridX, gridY);
 		GameObject pawnObject = (GameObject)Instantiate(prefab, new Vector3(posInChessBoard.x, posInChessBoard.y, 0), Quaternion.identity);
 		pawnObject.transform.SetParent(ChessBoard.transform);
-
 		pawn.obj = pawnObject;
-		updatePawnDisplay(pawn);
+		pawn.neighborOppositeCount = getNeighborOppoCount(type, pawn.gridPos);
 
 		_pawns.Add(pawn);
 		_grids[gridIndex] = pawn;
@@ -434,12 +442,10 @@ public class MainState : MonoBehaviour {
 		public EliminateStats(MainState container) {
 			eliminateRowFlags = new bool[container.BoardHeight];
 		}
-
-		public enum Const {
-			TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE = 3,
-			BACKWARDS_GAIN_ELIMINATE_ROW_PER_MOVE = 1
-		};
 	};
+
+	public int TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE = 4;
+	public int BACKWARDS_GAIN_ELIMINATE_ROW_PER_MOVE = 2;
 
 	EliminateStats _eliminateStats;
 
@@ -468,7 +474,7 @@ public class MainState : MonoBehaviour {
 			invalidUI();
 		}
 
-		if (!_eliminateStats.trashChanceGained && _eliminateStats.continuousEliminatePawnCount >= (int)EliminateStats.Const.TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE) {
+		if (!_eliminateStats.trashChanceGained && _eliminateStats.continuousEliminatePawnCount >= TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE) {
 			++_trashChance;
 			invalidUI();
 			_eliminateStats.trashChanceGained = true;
@@ -494,7 +500,7 @@ public class MainState : MonoBehaviour {
 				}
 			}
 
-			if (eliminateRowCount >= (int)EliminateStats.Const.BACKWARDS_GAIN_ELIMINATE_ROW_PER_MOVE) {
+			if (eliminateRowCount >= BACKWARDS_GAIN_ELIMINATE_ROW_PER_MOVE) {
 				++_backwardsChance;
 				invalidUI();
 				_eliminateStats.backwardsChanceGained = true;
@@ -508,7 +514,6 @@ public class MainState : MonoBehaviour {
 		if (startPawn == null) {
 			foreach (Pawn pawn in _pawns) {
 				pawn.neighborOppositeCount = getNeighborOppoCount(pawn.type, pawn.gridPos);
-				updatePawnDisplay(pawn);
 			}
 		} else {
 			resetEliminateStats(_turn);
@@ -520,7 +525,6 @@ public class MainState : MonoBehaviour {
 				Pawn pawn = getPawnAtPos((int)(offset.x + startPawnPos.x), (int)(offset.y + startPawnPos.y));
 				if (pawn != null && pawn.type != startPawn.type) {
 					++pawn.neighborOppositeCount;
-					updatePawnDisplay(pawn);
 				}
 			}
 		}
@@ -839,21 +843,6 @@ public class MainState : MonoBehaviour {
 		}
 
 		pawn.obj = null;
-	}
-
-	const float MARK_DISTANCE = 0.256f;
-	const float MARK_RADIAN_UNIT = Mathf.PI / 4;
-
-	private void updatePawnDisplay(Pawn pawn) {
-		Transform mark = pawn.obj.transform.Find("mark");
-		mark.renderer.enabled = pawn.neighborOppositeCount > 0;
-		if (pawn.neighborOppositeCount > 0) {
-			float angle = Mathf.PI / 2 - MARK_RADIAN_UNIT * (pawn.neighborOppositeCount - 1);
-			Vector2 markPos = new Vector2();
-			markPos.x = MARK_DISTANCE * Mathf.Cos(angle);
-			markPos.y = MARK_DISTANCE * Mathf.Sin(angle);
-			mark.transform.localPosition = new Vector3(markPos.x, markPos.y, 0);
-		}
 	}
 
 	private void updateUI() {
