@@ -1,0 +1,11 @@
+fileFormatVersion: 2
+guid: 70e7e79af26ab4348bd8210e7607dfd8
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - BlackPawnPrefab: {fileID: 100000, guid: 79cb8fe9d081640b5b86709012c10a8a, type: 2}
+  - WhitePawnPrefab: {fileID: 100000, guid: d387ee447e7f34551b55b26916cf22f5, type: 2}
+  - GridPrefab: {fileID: 100000, guid: 9cd81e761694f4b3383445970eaee546, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
