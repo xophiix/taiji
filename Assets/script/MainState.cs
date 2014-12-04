@@ -13,6 +13,7 @@ public class MainState : MonoBehaviour {
 		WaitingPutPawn,
 		UpdatingPawnState,
 		JudgingElimination,
+		SelectingPawnToTrash,
 		GameOver
 	};
 
@@ -52,6 +53,7 @@ public class MainState : MonoBehaviour {
 		public PawnType type;
 		public int neighborOppositeCount;
 		public GameObject obj;
+		public Side side;
 	};
 
 	private ArrayList _pawns = new ArrayList();
@@ -100,7 +102,7 @@ public class MainState : MonoBehaviour {
 					int gridIndex = getRandomEmptyPawnGridIndex();
 					if (gridIndex >= 0) {
 						Vector2 gridPos = gridIndexToPos(gridIndex);
-						Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, _nextPawnTypes[(int)_turn]);
+						Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, _nextPawnTypes[(int)_turn], _turn);
 						if (pawn != null) {
 							_lastPutPawns[(int)_turn] = pawn;
 							prepareNextPawn(_turn);
@@ -119,7 +121,7 @@ public class MainState : MonoBehaviour {
 					Vector3 worldPos = this.camera.ScreenToWorldPoint(Input.mousePosition);
 					Vector2 gridIndice;
 					if (convertActualPosToIndex(worldPos, out gridIndice)) {
-						Pawn pawn = putPawn((int)gridIndice.x, (int)gridIndice.y, _nextPawnTypes[(int)_turn]);
+						Pawn pawn = putPawn((int)gridIndice.x, (int)gridIndice.y, _nextPawnTypes[(int)_turn], _turn);
 						if (pawn != null) {
 							if (_turn == Side.Self) {
 								if (_lastUsedBackwardsLock > 0) {
@@ -133,6 +135,22 @@ public class MainState : MonoBehaviour {
 						}
 					};
 				}
+			}
+		} else if (_gameState == GameState.SelectingPawnToTrash) {
+			if (Input.anyKeyDown && _turn == Side.Self) {
+				Vector3 worldPos = this.camera.ScreenToWorldPoint(Input.mousePosition);
+				Vector2 gridIndice;
+				if (convertActualPosToIndex(worldPos, out gridIndice)) {
+					Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
+					if (pawn != null && pawn.side == _turn) {
+						--_trashChance;
+						invalidUI();
+						destroyPawn(pawn, true, "eliminate");
+						_gameState = GameState.WaitingPutPawn;
+					} else if (pawn == null) {
+						_gameState = GameState.WaitingPutPawn;
+					}
+				};
 			}
 		}
 	}
@@ -154,18 +172,24 @@ public class MainState : MonoBehaviour {
 
 	// revert AI and self last pawn and reput my pawn
 	public void onBtnBackwards() {
-		if (_lastUsedBackwardsLock > 0 || _gameMode != GameMode.AI || _backwardsChance <= 0) {
+		if (_turn != Side.Self 
+		    || _lastUsedBackwardsLock > 0 
+		    || _gameMode != GameMode.AI 
+		    || _backwardsChance <= 0
+		    || _gameState != GameState.WaitingPutPawn) {
 			return;
 		}
 
 		bool use = false;
-		if (_lastPutPawns[(int)Side.Opposite] != null) {
-			destroyPawn(_lastPutPawns[(int)Side.Opposite], true, "playEliminateAnim");
+		int side = (int)Side.Opposite;
+		if (_lastPutPawns[side] != null) {
+			destroyPawn(_lastPutPawns[side], true, "eliminate");
 			use = true;
 		}
 
-		if (_lastPutPawns[(int)Side.Self] != null) {
-			destroyPawn(_lastPutPawns[(int)Side.Self], true, "playEliminateAnim");
+		side = (int)Side.Self;
+		if (_lastPutPawns[side] != null) {
+			destroyPawn(_lastPutPawns[side], true, "eliminate");
 			use = true;
 		}
 
@@ -183,7 +207,13 @@ public class MainState : MonoBehaviour {
 
 	// select and drop a self pawn 
 	public void onBtnTrash() {
-		Debug.Log("onBtnTrash");
+		if (_gameState != GameState.WaitingPutPawn 
+		    || _turn != Side.Self
+		    || _trashChance <= 0) {
+			return;
+		}
+
+		_gameState = GameState.SelectingPawnToTrash;
 	}
 
 	private void invalidUI() {
@@ -260,7 +290,7 @@ public class MainState : MonoBehaviour {
 		);
 	}
 
-	private Pawn putPawn(int gridX, int gridY, PawnType type) {
+	private Pawn putPawn(int gridX, int gridY, PawnType type, Side side) {
 		Pawn pawnAtPos = getPawnAtPos(gridX, gridY);
 		if (pawnAtPos != null) {
 			Debug.LogWarning("already have pawn at pos: " + new Vector2(gridX, gridY));
@@ -272,6 +302,7 @@ public class MainState : MonoBehaviour {
 		pawn.gridIndex = gridIndex;
 		pawn.gridPos = gridIndexToPos(gridIndex);
 		pawn.type = type;
+		pawn.side = side;
 		pawn.neighborOppositeCount = getNeighborOppoCount(type, pawn.gridPos);
 
 		Object prefab = type == PawnType.Black ? BlackPawnPrefab : WhitePawnPrefab;
@@ -353,18 +384,20 @@ public class MainState : MonoBehaviour {
 
 	private IEnumerator eliminateAdjacentPawns() {
 		_gameState = GameState.JudgingElimination;
+
 		for (int i = 0; i < _pawnListToEliminate.Count; ++i) {
 			ArrayList pawnList = (ArrayList)_pawnListToEliminate[i];
 			_score += calculateScore(pawnList);
-			++_combo;
+
+			concludeEliminateStats(pawnList);
 			invalidUI();
 
 			foreach (Pawn pawn in pawnList) {
-				destroyPawn(pawn, true, "playEliminateAnim");
+				destroyPawn(pawn, true, "eliminate");
 			}
 
 			pawnList.Clear();
-			yield return new WaitForSeconds(1.0f);
+			yield return new WaitForSeconds(0.3f);
 		}
 
 		_pawnListToEliminate.Clear();
@@ -384,6 +417,86 @@ public class MainState : MonoBehaviour {
 		}
 	}
 
+	class EliminateStats {
+		public int continuousEliminatePawnCount;
+		public int comboByLastMove;
+		public int comboStoredBeforeJudge;
+		public bool trashChanceGained;
+		public bool backwardsChanceGained;
+		public bool[] eliminateRowFlags;
+		public bool enableStats;
+
+		public EliminateStats(MainState container) {
+			eliminateRowFlags = new bool[container.BoardHeight];
+		}
+
+		public enum Const {
+			TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE = 3,
+			BACKWARDS_GAIN_ELIMINATE_ROW_PER_MOVE = 1
+		};
+	};
+
+	EliminateStats _eliminateStats;
+
+	private void resetEliminateStats(Side turn) {
+		_eliminateStats.enableStats = turn == Side.Self;
+		_eliminateStats.continuousEliminatePawnCount = 0;
+		_eliminateStats.comboByLastMove = 0;
+		_eliminateStats.trashChanceGained = false;
+		_eliminateStats.backwardsChanceGained = false;
+		_eliminateStats.comboStoredBeforeJudge = _combo;
+		for (int i = 0; i < _eliminateStats.eliminateRowFlags.Length; ++i) {
+			_eliminateStats.eliminateRowFlags[i] = false;
+		}
+	}
+
+	private void concludeEliminateStats(ArrayList pawnList) {
+		if (!_eliminateStats.enableStats) {
+			return;
+		}
+
+		++_eliminateStats.comboByLastMove;
+		_eliminateStats.continuousEliminatePawnCount += pawnList.Count;
+
+		if (_eliminateStats.comboByLastMove > 1) {
+			_combo = _eliminateStats.comboStoredBeforeJudge + _eliminateStats.comboByLastMove;
+			invalidUI();
+		}
+
+		if (!_eliminateStats.trashChanceGained && _eliminateStats.continuousEliminatePawnCount >= (int)EliminateStats.Const.TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE) {
+			++_trashChance;
+			invalidUI();
+			_eliminateStats.trashChanceGained = true;
+		}
+
+		if (!_eliminateStats.backwardsChanceGained) {
+			// check two row
+			int[] pawnCountOnRow = new int[BoardHeight];
+			foreach (Pawn pawn in pawnList) {
+				++pawnCountOnRow[(int)pawn.gridPos.y];
+			}
+
+			for (int row = 0; row < pawnCountOnRow.Length; ++row) {
+				if (pawnCountOnRow[row] >= 3) {
+					_eliminateStats.eliminateRowFlags[row] = true;
+				}
+			}
+
+			int eliminateRowCount = 0;
+			for (int row = 0; row < _eliminateStats.eliminateRowFlags.Length; ++row) {
+				if (_eliminateStats.eliminateRowFlags[row]) {
+					++eliminateRowCount;
+				}
+			}
+
+			if (eliminateRowCount >= (int)EliminateStats.Const.BACKWARDS_GAIN_ELIMINATE_ROW_PER_MOVE) {
+				++_backwardsChance;
+				invalidUI();
+				_eliminateStats.backwardsChanceGained = true;
+			}
+		}
+	}
+
 	private void updateScenePawnState(Pawn startPawn = null) {
 		// traverse the map
 		_gameState = GameState.UpdatingPawnState;
@@ -393,6 +506,8 @@ public class MainState : MonoBehaviour {
 				updatePawnDisplay(pawn);
 			}
 		} else {
+			resetEliminateStats(_turn);
+
 			// only update adjacent grids
 			Vector2 startPawnPos = startPawn.gridPos;
 			for (int i = 0; i < NEIGHBOR_GRID_OFFSETS.Length; ++i) {
@@ -409,13 +524,10 @@ public class MainState : MonoBehaviour {
 		_pawnListToEliminate.Clear();
 		collectAdjacentPawns();
 
-		Debug.Log("updateScenePawnState: " + _pawnListToEliminate.Count);
-
 		if (_pawnListToEliminate.Count > 0) {
 			Invoke("startEliminateAdjacentPawns", 0.3f);
 		} else {
 			_gameState = GameState.WaitingPutPawn;
-			_combo = 0;
 			invalidUI();
 		}
 	}
@@ -584,6 +696,7 @@ public class MainState : MonoBehaviour {
 		int gridSize = BoardWidth * BoardHeight;
 		_grids = new Pawn[gridSize];
 		_gridFlags = new GridFlag[2, gridSize];
+		_eliminateStats = new EliminateStats(this);
 
 		initTraverseIndice();
 
@@ -611,6 +724,7 @@ public class MainState : MonoBehaviour {
 		_gameMode = GameMode.Self;
 		_turn = Side.Self;
 
+		resetEliminateStats(_turn);
 		pause(false);
 		invalidUI();
 
@@ -702,6 +816,15 @@ public class MainState : MonoBehaviour {
 
 		_pawns.Remove(pawn);
 		_grids[pawn.gridIndex] = null;
+
+		if (_lastPutPawns[(int)Side.Self] == pawn) {
+			_lastPutPawns[(int)Side.Self] = null;
+		}
+
+		if (_lastPutPawns[(int)Side.Opposite] == pawn) {
+			_lastPutPawns[(int)Side.Opposite] = null;
+		}
+
 		if (!justUnRef) {
 			Destroy(pawn.obj);
 		} else {

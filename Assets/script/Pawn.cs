@@ -11,7 +11,7 @@ public class Pawn : MonoBehaviour {
 	void Start () {
 	}
 
-	void playEliminateAnim() {
+	void eliminate() {
 		StartCoroutine("updateElimateAnim");
 	}
 
