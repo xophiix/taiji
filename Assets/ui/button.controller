@@ -109,7 +109,7 @@ AnimationClip:
         value: {x: .819999993, y: .819999993, z: 1}
         inSlope: {x: 0, y: 0, z: 0}
         outSlope: {x: 0, y: 0, z: 0}
-        tangentMode: 15
+        tangentMode: 6579564
       m_PreInfinity: 2
       m_PostInfinity: 2
     path: 
@@ -400,7 +400,7 @@ State:
   m_Motions:
   - {fileID: 7400004}
   m_ParentStateMachine: {fileID: 110700000}
-  m_Position: {x: 270, y: 130, z: 0}
+  m_Position: {x: 276, y: 132, z: 0}
   m_IKOnFeet: 0
   m_Mirror: 0
   m_Tag: 
@@ -436,24 +436,24 @@ StateMachine:
   m_ChildStateMachinePosition: []
   m_OrderedTransitions:
     data:
-      first: {fileID: 110274220}
-      second: []
-    data:
-      first: {fileID: 110224772}
-      second: []
-    data:
-      first: {fileID: 110215212}
-      second: []
-    data:
-      first: {fileID: 110200000}
-      second: []
-    data:
       first: {fileID: 0}
       second:
       - {fileID: 110100000}
       - {fileID: 110115212}
       - {fileID: 110124772}
       - {fileID: 110174220}
+    data:
+      first: {fileID: 110200000}
+      second: []
+    data:
+      first: {fileID: 110215212}
+      second: []
+    data:
+      first: {fileID: 110224772}
+      second: []
+    data:
+      first: {fileID: 110274220}
+      second: []
   m_MotionSetCount: 1
   m_AnyStatePosition: {x: -48, y: 108, z: 0}
   m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}

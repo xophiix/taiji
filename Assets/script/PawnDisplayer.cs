@@ -1,30 +1,47 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
-public class Pawn : MonoBehaviour {
-	private int _neighborCount;
-	private int _destNeighborCount;
-
+public class PawnDisplayer : MonoBehaviour {
 	private float _curMarkAngle = Mathf.PI / 2;
 	private float _destMarkAngle;
 	public float rotateAngleSpeed = 0.03f;
 	public float alphaChangeSpeed = 0.03f;
 
 	private Transform _mark;
+	private Image _markImage;
+
 	private float _destAlpha;
 	private float _curAlpha;
 	
 	float MARK_DISTANCE;
 	const float MARK_RADIAN_UNIT = Mathf.PI / 4;
 
-	void Awake() {
-		_destMarkAngle = _curMarkAngle;
-		_mark = gameObject.transform.Find("mark");
+	public MainState.PawnType pawnType = MainState.PawnType.Black;
+	public Sprite whitePawn;
+	public Sprite whitePawnMark;
+	public Sprite blackPawn;
+	public Sprite blackPawnMark;
 
-		Color color = _mark.renderer.material.color;
+	void Start() {
+		_destMarkAngle = _curMarkAngle;
+		_mark = gameObject.transform.Find("Mark");
+		_markImage = _mark.GetComponent<Image>();
+
+		Color color = _markImage.color;
 		color.a = _curAlpha;
-		_mark.renderer.material.color = color;
+		_markImage.color = color;
 		MARK_DISTANCE = _mark.transform.localPosition.y;
+
+		Sprite pawnImage = blackPawn;
+		Sprite pawnMarkImage = whitePawnMark;
+		if (pawnType == MainState.PawnType.White) {
+			pawnImage = whitePawn;
+			pawnMarkImage = blackPawnMark;
+		}
+
+		gameObject.GetComponent<Image>().sprite = pawnImage;
+		_mark.GetComponent<Image>().sprite = pawnMarkImage;
 	}
 
 	void eliminate() {
@@ -70,9 +87,9 @@ public class Pawn : MonoBehaviour {
 		}
 
 		if (alphaChanged) {
-			Color color = _mark.renderer.material.color;
+			Color color = _markImage.color;
 			color.a = _curAlpha;
-			_mark.renderer.material.color = color;
+			_markImage.color = color;
 		}
 	}
 

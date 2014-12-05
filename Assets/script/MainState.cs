@@ -3,9 +3,8 @@ using System.Collections;
 using UnityEngine.UI;
 
 public class MainState : MonoBehaviour {
-	public Object BlackPawnPrefab;
-	public Object WhitePawnPrefab;
-	public GameObject ChessBoard;
+	public GameObject PawnPrefab;
+
 	public int BoardWidth = 8;
 	public int BoardHeight = 8;
 
@@ -47,6 +46,8 @@ public class MainState : MonoBehaviour {
 	private PawnType[] _nextPawnTypes = new PawnType[(int)Side.Count];
 	private Pawn[] _lastPutPawns = new Pawn[(int)Side.Count];
 	private int _score;
+	private int _exp;
+	private int _expNextLevel = 100;
 	private int _combo;
 	private int _trashChance; 			// chance to cancel opposite's last pawn
 	private int _backwardsChance; 		// chance to cancel opposite's last pawn
@@ -77,7 +78,6 @@ public class MainState : MonoBehaviour {
 	private Pawn[] _grids;
 
 	class BoardLayout {
-		public Vector2 origin = new Vector2();
 		public Vector2 size = new Vector2();
 		public Vector2 gridSize = new Vector2();
 	};
@@ -85,23 +85,52 @@ public class MainState : MonoBehaviour {
 	private BoardLayout _boardLayout = new BoardLayout();
 
 	// ui
+	private Image _chessBoard;
 	private Text _scoreText;
 	private Text _comboText;
 	private Image _nextPawnImage;
+	private Image _expBar;
+	private Text _trashChanceText;
+	private Text _backChanceText;
 	public Sprite whitePawn;
 	public Sprite blackPawn;
 	private bool _uiInvalid = true;
 
 	public GameObject startMenuPrefab;
-	public GameObject gameMainUI;
+	
+	void Awake() {
+		preInit();
+	}
 
-	// Use this for initialization
-	void Start () {
+	void Start() {
 		init();
 	}
 
-	// Update is called once per frame
-	void Update () {
+	bool _waitingForOppoSide;
+
+	void performAIMove() {
+		int gridIndex = getRandomEmptyPawnGridIndex();
+		if (gridIndex >= 0) {
+			Vector2 gridPos = gridIndexToPos(gridIndex);
+			Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, _nextPawnTypes[(int)_turn], _turn);
+			if (pawn != null) {
+				_lastPutPawns[(int)_turn] = pawn;
+				prepareNextPawn(_turn);
+				_turn = Side.Self;
+			}
+		}
+	}
+
+	void startWaitingOppoSide(float delay) {
+		_waitingForOppoSide = true;
+		Invoke("stopWaitingOppoSide", delay);
+	}
+
+	void stopWaitingOppoSide() {
+		_waitingForOppoSide = false;
+	}
+
+	void Update() {
 		if (_uiInvalid) {
 			updateUI();
 			_uiInvalid = false;
@@ -114,17 +143,12 @@ public class MainState : MonoBehaviour {
 		if (_gameState == GameState.WaitingPutPawn) {
 			bool waitInput = false;
 			if (_turn == Side.Opposite) {
+				if (_waitingForOppoSide) {
+					return;
+				}
+
 				if (_gameMode == GameMode.AI) {
-					int gridIndex = getRandomEmptyPawnGridIndex();
-					if (gridIndex >= 0) {
-						Vector2 gridPos = gridIndexToPos(gridIndex);
-						Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, _nextPawnTypes[(int)_turn], _turn);
-						if (pawn != null) {
-							_lastPutPawns[(int)_turn] = pawn;
-							prepareNextPawn(_turn);
-							_turn = Side.Self;
-						}
-					}
+					performAIMove();
 				} else if (_gameMode == GameMode.Self){
 					waitInput = true;
 				}
@@ -134,9 +158,8 @@ public class MainState : MonoBehaviour {
 
 			if (waitInput) {
 				if (Input.anyKeyDown) {
-					Vector3 worldPos = this.camera.ScreenToWorldPoint(Input.mousePosition);
 					Vector2 gridIndice;
-					if (convertActualPosToIndex(worldPos, out gridIndice)) {
+					if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
 						Pawn pawn = putPawn((int)gridIndice.x, (int)gridIndice.y, _nextPawnTypes[(int)_turn], _turn);
 						if (pawn != null) {
 							if (_turn == Side.Self) {
@@ -147,6 +170,7 @@ public class MainState : MonoBehaviour {
 
 							_lastPutPawns[(int)_turn] = pawn;
 							prepareNextPawn(_turn);
+							startWaitingOppoSide(_gameMode == GameMode.AI ? 1.0f : 0.0f);
 							_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
 						}
 					};
@@ -154,9 +178,8 @@ public class MainState : MonoBehaviour {
 			}
 		} else if (_gameState == GameState.SelectingPawnToTrash) {
 			if (Input.anyKeyDown && _turn == Side.Self) {
-				Vector3 worldPos = this.camera.ScreenToWorldPoint(Input.mousePosition);
 				Vector2 gridIndice;
-				if (convertActualPosToIndex(worldPos, out gridIndice)) {
+				if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
 					Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
 					if (pawn != null && pawn.side == _turn) {
 						--_trashChance;
@@ -171,19 +194,38 @@ public class MainState : MonoBehaviour {
 		}
 	}
 
+	private bool getGridIndexByScreenPosition(Vector3 screenPosition, out Vector2 gridIndice) {
+		Vector3 posInBoard = _chessBoard.rectTransform.InverseTransformPoint(screenPosition);
+		gridIndice = new Vector2();
+		float offsetX = posInBoard.x;
+		float offsetY = posInBoard.y;
+		if (offsetX < 0 || offsetY < 0 
+		    || offsetX > _boardLayout.size.x 
+		    || offsetY > _boardLayout.size.y) {
+			return false;
+		}
+		
+		gridIndice.Set(
+			Mathf.FloorToInt(offsetX / _boardLayout.gridSize.x),
+			Mathf.FloorToInt(offsetY / _boardLayout.gridSize.y)
+			);
+		
+		return true;
+	}
+
 	private void prepareNextPawn(Side side) {
 		float prob = Random.Range(0.0f, 1.0f);
 		_nextPawnTypes[(int)side] = prob > 0.5 ? PawnType.Black : PawnType.White;
 		invalidUI();
 	}
 
-	private void pause(bool value) {
+	public void pause(bool value) {
 		if (_paused == value) {
 			return;
 		}
 
 		_paused = value;
-		gameMainUI.GetComponent<GraphicRaycaster>().enabled = !value;
+		gameObject.GetComponent<GraphicRaycaster>().enabled = !value;
 	}
 
 	// revert AI and self last pawn and reput my pawn
@@ -281,28 +323,10 @@ public class MainState : MonoBehaviour {
 		return new Vector2(x, y);
 	}
 
-	private bool convertActualPosToIndex(Vector3 pos, out Vector2 gridIndice) {
-		gridIndice = new Vector2();
-		float offsetX = pos.x - _boardLayout.origin.x;
-		float offsetY = pos.y - _boardLayout.origin.y;
-		if (offsetX < 0 || offsetY < 0 
-		    || offsetX > _boardLayout.size.x 
-		    || offsetY > _boardLayout.size.y) {
-			return false;
-		}
-
-		gridIndice.Set(
-			Mathf.FloorToInt(offsetX / _boardLayout.gridSize.x),
-			Mathf.FloorToInt(offsetY / _boardLayout.gridSize.y)
-		);
-
-		return true;
-	}
-
-	private Vector2 convertIndexToActualPos(int gridX, int gridY) {
+	private Vector2 convertIndexToPosInBoard(int gridX, int gridY) {
 		return new Vector2(
-			_boardLayout.origin.x + (gridX + 0.5f) * _boardLayout.gridSize.x,
-			_boardLayout.origin.y + (gridY + 0.5f) * _boardLayout.gridSize.y
+			(gridX + 0.5f) * _boardLayout.gridSize.x,
+			(gridY + 0.5f) * _boardLayout.gridSize.y
 		);
 	}
 
@@ -319,10 +343,15 @@ public class MainState : MonoBehaviour {
 		pawn.type = type;
 		pawn.side = side;
 
-		Object prefab = type == PawnType.Black ? BlackPawnPrefab : WhitePawnPrefab;
-		Vector2 posInChessBoard = convertIndexToActualPos(gridX, gridY);
-		GameObject pawnObject = (GameObject)Instantiate(prefab, new Vector3(posInChessBoard.x, posInChessBoard.y, 0), Quaternion.identity);
-		pawnObject.transform.SetParent(ChessBoard.transform);
+		Vector2 posInChessBoard = convertIndexToPosInBoard(gridX, gridY);
+		GameObject pawnObject = (GameObject)Instantiate(PawnPrefab, Vector3.zero, Quaternion.identity);
+		Vector3 parentWorldScale = _chessBoard.transform.lossyScale;
+
+		pawnObject.transform.SetParent(_chessBoard.transform, true);
+		pawnObject.transform.localPosition = new Vector3(posInChessBoard.x, posInChessBoard.y, 0);
+		pawnObject.transform.localScale = Vector3.one;
+
+		pawnObject.GetComponent<PawnDisplayer>().pawnType = type;
 		pawn.obj = pawnObject;
 		pawn.neighborOppositeCount = getNeighborOppoCount(type, pawn.gridPos);
 
@@ -375,19 +404,23 @@ public class MainState : MonoBehaviour {
 	}
 
 	private int calculateScore(ArrayList adjacentPawnList) {
-		// score = typeCount * 2 ^ (N - 3);
+		// score = 2 ^ maxNeighborCount * 2 ^ (N - 3);
 		bool[] typeFlag = new bool[9];
 		int typeCount = 0;
-
+		int maxNeighborCount = 0;
 		foreach (Pawn pawn in adjacentPawnList) {
 			int neighborOppositeCount = pawn.neighborOppositeCount;
+			if (neighborOppositeCount > maxNeighborCount) {
+				maxNeighborCount = neighborOppositeCount;
+			}
+
 			if (!typeFlag[neighborOppositeCount]) {
 				typeFlag[neighborOppositeCount] = true;
 				++typeCount;
 			}
 		}
 
-		int score = typeCount;
+		int score = (int)Mathf.Pow(2, maxNeighborCount);
 		if (adjacentPawnList.Count > ADJACENT_COUNT_TO_ELIMINATE) {
 			score *= (int)Mathf.Pow(2, adjacentPawnList.Count - ADJACENT_COUNT_TO_ELIMINATE);
 		}
@@ -395,12 +428,19 @@ public class MainState : MonoBehaviour {
 		return score;
 	}
 
+	private int calculateExp(int addedScore) {
+		// TODO:
+		return addedScore * 2;
+	}
+
 	private IEnumerator eliminateAdjacentPawns() {
 		_gameState = GameState.JudgingElimination;
 
 		for (int i = 0; i < _pawnListToEliminate.Count; ++i) {
 			ArrayList pawnList = (ArrayList)_pawnListToEliminate[i];
-			_score += calculateScore(pawnList);
+			int addedScore = calculateScore(pawnList);
+			_score += addedScore;
+			_exp += calculateExp(addedScore);
 
 			concludeEliminateStats(pawnList);
 			invalidUI();
@@ -695,29 +735,34 @@ public class MainState : MonoBehaviour {
 		}
 	}
 
+	private void preInit() {		
+		_eliminateStats = new EliminateStats(this);
+	}
+
 	private void init() {
-		Bounds boardBounds = ChessBoard.renderer.bounds;
-		_boardLayout.origin.Set(boardBounds.min.x, boardBounds.min.y);
-		_boardLayout.size.Set(boardBounds.size.x, boardBounds.size.y);
+		_chessBoard = gameObject.transform.Find("Background/ChessBoard").GetComponent<Image>();
+		_boardLayout.size = _chessBoard.rectTransform.rect.size;
 		_boardLayout.gridSize.x = _boardLayout.size.x / BoardWidth;
 		_boardLayout.gridSize.y = _boardLayout.size.y / BoardHeight;
 
 		int gridSize = BoardWidth * BoardHeight;
 		_grids = new Pawn[gridSize];
 		_gridFlags = new GridFlag[2, gridSize];
-		_eliminateStats = new EliminateStats(this);
 
 		initTraverseIndice();
 
 		prepareNextPawn(Side.Self);
 		prepareNextPawn(Side.Opposite);
 
-		_scoreText = gameMainUI.transform.Find("Score").GetComponent<Text>();
-		_comboText = gameMainUI.transform.Find("Combo").GetComponent<Text>();
-		_nextPawnImage = gameMainUI.transform.Find("NextPawn").GetComponent<Image>();
+		_scoreText = gameObject.transform.Find("Background/ScoreLabel/Score").GetComponent<Text>();
+		_comboText = gameObject.transform.Find("Background/ComboLabel/Combo").GetComponent<Text>();
+		_nextPawnImage = gameObject.transform.Find("Background/UpNextLabel/NextPawn").GetComponent<Image>();
+		_backChanceText = gameObject.transform.Find("Background/TitleLayer/BtnBack/Count").GetComponent<Text>();
+		_trashChanceText = gameObject.transform.Find("Background/TitleLayer/BtnTrash/Count").GetComponent<Text>();
+		_expBar = gameObject.transform.Find("Background/TitleLayer/ExpBar").GetComponent<Image>();
 	}
 
-	private void restart(Hashtable parameters) {
+	public void restart(Hashtable parameters) {
 		while (_pawns.Count > 0) {
 			destroyPawn((Pawn)_pawns[_pawns.Count - 1]);
 		}
@@ -857,8 +902,11 @@ public class MainState : MonoBehaviour {
 		}
 
 		_nextPawnImage.sprite = nextPawnType == PawnType.Black ? blackPawn : whitePawn;
-		gameMainUI.transform.Find("BtnBack/Count").GetComponent<Text>().text = _backwardsChance.ToString();
-		gameMainUI.transform.Find("BtnTrash/Count").GetComponent<Text>().text = _trashChance.ToString();
+		_backChanceText.text = _backwardsChance.ToString();
+		_trashChanceText.text = _trashChance.ToString();
+
+		float expScale = (float)_exp / _expNextLevel;
+		_expBar.transform.localScale = new Vector3(expScale, 1, 1);
 	}
 
 	#endregion

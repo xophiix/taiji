@@ -3,19 +3,31 @@ using UnityEngine.UI;
 using System.Collections;
 
 public class StartMenu : MonoBehaviour {
+	public GameObject gameMainUIPrefab;
+
 	Toggle _aiModeToggle, _selfModeToggle;
 
-	// Use this for initialization
-	void Start () {
+	private void initToggleState() {
+		GameObject gameMainUI = GameObject.Find("GameMainUI");
+		Transform resumeButton = gameObject.transform.Find("Panel/ButtonLayer/Resume");
+		resumeButton.gameObject.SetActive(gameMainUI != null);
+
 		_aiModeToggle = gameObject.transform.Find("Panel/ToggleAIMode").GetComponent<Toggle>();
 		_selfModeToggle = gameObject.transform.Find("Panel/ToggleSelfMode").GetComponent<Toggle>();
-
-		MainState.GameMode gameMode = GameObject.Find("MainState").GetComponent<MainState>().gameMode;
-		if (gameMode == MainState.GameMode.AI) {
-			_aiModeToggle.isOn = true;
-		} else if (gameMode == MainState.GameMode.Self) {
-			_selfModeToggle.isOn = true;
+	
+		if (gameMainUI != null) {
+			MainState.GameMode gameMode = gameMainUI.GetComponent<MainState>().gameMode;
+			if (gameMode == MainState.GameMode.AI) {
+				_aiModeToggle.isOn = true;
+			} else if (gameMode == MainState.GameMode.Self) {
+				_selfModeToggle.isOn = true;
+			}
 		}
+	}
+
+	// Use this for initialization
+	void Start() {
+		initToggleState();
 	}
 	
 	// Update is called once per frame
@@ -35,13 +47,19 @@ public class StartMenu : MonoBehaviour {
 
 		parameters["gameMode"] = gameMode;
 
-		GameObject.Find("MainState").SendMessage("restart", parameters);
+		GameObject gameMainUI = GameObject.Find("GameMainUI");
+		if (gameMainUI == null) {
+			gameMainUI = (GameObject)Instantiate(gameMainUIPrefab);
+			gameMainUI.name = "GameMainUI";
+		}
+
+		gameMainUI.GetComponent<MainState>().restart(parameters);
 		Destroy(this.gameObject);
 	}
 
 	public void onQuit() {
 		if (Application.isEditor) {
-			onContinue();
+			onResume();
 			return;
 		}
 
@@ -53,8 +71,29 @@ public class StartMenu : MonoBehaviour {
 		}
 	}
 
-	public void onContinue() {
-		GameObject.Find("MainState").SendMessage("pause", false);
+	public void onResume() {
+		GameObject gameMainUI = GameObject.Find("GameMainUI");
+		if (gameMainUI == null) {
+			return;
+		}
+
+		gameMainUI.GetComponent<MainState>().pause(false);
 		Destroy(this.gameObject);
+	}
+
+	public void onSetting() {
+		Debug.Log("onSetting");
+	}
+
+	public void onAchievement() {
+		Debug.Log("onAchievement");
+	}
+
+	public void onHighScores() {
+		Debug.Log("onHighScores");
+	}
+
+	public void onGooglePlus() {
+		Debug.Log("onGooglePlus");
 	}
 }
