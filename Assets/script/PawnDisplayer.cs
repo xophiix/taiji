@@ -23,16 +23,18 @@ public class PawnDisplayer : MonoBehaviour {
 	public Sprite blackPawn;
 	public Sprite blackPawnMark;
 
-	void Start() {
+	void Awake() {
 		_destMarkAngle = _curMarkAngle;
 		_mark = gameObject.transform.Find("Mark");
 		_markImage = _mark.GetComponent<Image>();
-
+		
 		Color color = _markImage.color;
 		color.a = _curAlpha;
 		_markImage.color = color;
 		MARK_DISTANCE = _mark.transform.localPosition.y;
+	}
 
+	void Start() {
 		Sprite pawnImage = blackPawn;
 		Sprite pawnMarkImage = whitePawnMark;
 		if (pawnType == MainState.PawnType.White) {
