@@ -8,14 +8,14 @@ public class StartMenu : MonoBehaviour {
 	Toggle _aiModeToggle, _selfModeToggle;
 
 	private void initToggleState() {
-		GameObject gameMainUI = GameObject.Find("GameMainUI");
+		GameObject gameMainUI = GameInit.instance().mainUI;
 		Transform resumeButton = gameObject.transform.Find("Panel/ButtonLayer/Resume");
-		resumeButton.gameObject.SetActive(gameMainUI != null);
+		resumeButton.gameObject.SetActive(gameMainUI.activeSelf);
 
 		_aiModeToggle = gameObject.transform.Find("Panel/ToggleAIMode").GetComponent<Toggle>();
 		_selfModeToggle = gameObject.transform.Find("Panel/ToggleSelfMode").GetComponent<Toggle>();
 	
-		if (gameMainUI != null) {
+		if (gameMainUI.activeSelf) {
 			MainState.GameMode gameMode = gameMainUI.GetComponent<MainState>().gameMode;
 			if (gameMode == MainState.GameMode.AI) {
 				_aiModeToggle.isOn = true;
@@ -47,14 +47,13 @@ public class StartMenu : MonoBehaviour {
 
 		parameters["gameMode"] = gameMode;
 
-		GameObject gameMainUI = GameObject.Find("GameMainUI");
-		if (gameMainUI == null) {
-			gameMainUI = (GameObject)Instantiate(gameMainUIPrefab);
-			gameMainUI.name = "GameMainUI";
+		GameObject gameMainUI = GameInit.instance().mainUI;
+		if (!gameMainUI.activeSelf) {
+			gameMainUI.SetActive(true);
 		}
 
 		gameMainUI.GetComponent<MainState>().restart(parameters);
-		Destroy(this.gameObject);
+		this.gameObject.SetActive(false);
 	}
 
 	public void onQuit() {
@@ -78,7 +77,7 @@ public class StartMenu : MonoBehaviour {
 		}
 
 		gameMainUI.GetComponent<MainState>().pause(false);
-		Destroy(this.gameObject);
+		this.gameObject.SetActive(false);
 	}
 
 	public void onSetting() {

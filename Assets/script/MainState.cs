@@ -195,7 +195,9 @@ public class MainState : MonoBehaviour {
 	}
 
 	private bool getGridIndexByScreenPosition(Vector3 screenPosition, out Vector2 gridIndice) {
-		Vector3 posInBoard = _chessBoard.rectTransform.InverseTransformPoint(screenPosition);
+		Vector3 worldPosition = Camera.main.ScreenToWorldPoint(screenPosition);
+		Vector3 posInBoard = _chessBoard.rectTransform.InverseTransformPoint(worldPosition);
+
 		gridIndice = new Vector2();
 		float offsetX = posInBoard.x;
 		float offsetY = posInBoard.y;
@@ -260,7 +262,8 @@ public class MainState : MonoBehaviour {
 
 	public void onBtnQuit() {
 		pause (true);
-		Instantiate(startMenuPrefab);
+		GameInit.instance().startMenu.SetActive(true);
+		//Instantiate(startMenuPrefab);
 	}
 
 	// select and drop a self pawn 
@@ -345,7 +348,6 @@ public class MainState : MonoBehaviour {
 
 		Vector2 posInChessBoard = convertIndexToPosInBoard(gridX, gridY);
 		GameObject pawnObject = (GameObject)Instantiate(PawnPrefab, Vector3.zero, Quaternion.identity);
-		Vector3 parentWorldScale = _chessBoard.transform.lossyScale;
 
 		pawnObject.transform.SetParent(_chessBoard.transform, true);
 		pawnObject.transform.localPosition = new Vector3(posInChessBoard.x, posInChessBoard.y, 0);
