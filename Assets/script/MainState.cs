@@ -46,8 +46,9 @@ public class MainState : MonoBehaviour {
 	private PawnType[] _nextPawnTypes = new PawnType[(int)Side.Count];
 	private Pawn[] _lastPutPawns = new Pawn[(int)Side.Count];
 	private int _score;
-	private int _exp;
+	private int _exp = 0;
 	private int _expNextLevel = 100;
+	private int _level = 1;
 	private int _combo;
 	private int _trashChance; 			// chance to cancel opposite's last pawn
 	private int _backwardsChance; 		// chance to cancel opposite's last pawn
@@ -92,9 +93,11 @@ public class MainState : MonoBehaviour {
 	private Image _expBar;
 	private Text _trashChanceText;
 	private Text _backChanceText;
-	public Sprite whitePawn;
-	public Sprite blackPawn;
+	private Text _levelText;
 	private bool _uiInvalid = true;
+	private bool _nextPawnStateInvalid = true;
+	private TitleLayer _titleLayer;
+	private NextPawnBoard _nextPawnBoard;
 
 	public GameObject startMenuPrefab;
 	
@@ -218,6 +221,7 @@ public class MainState : MonoBehaviour {
 	private void prepareNextPawn(Side side) {
 		float prob = Random.Range(0.0f, 1.0f);
 		_nextPawnTypes[(int)side] = prob > 0.5 ? PawnType.Black : PawnType.White;
+		_nextPawnStateInvalid = true;
 		invalidUI();
 	}
 
@@ -405,7 +409,7 @@ public class MainState : MonoBehaviour {
 		return _grids[index];
 	}
 
-	private int calculateScore(ArrayList adjacentPawnList) {
+	private int calculateScore(ArrayList adjacentPawnList, int combo) {
 		// score = 2 ^ maxNeighborCount * 2 ^ (N - 3);
 		bool[] typeFlag = new bool[9];
 		int typeCount = 0;
@@ -427,12 +431,41 @@ public class MainState : MonoBehaviour {
 			score *= (int)Mathf.Pow(2, adjacentPawnList.Count - ADJACENT_COUNT_TO_ELIMINATE);
 		}
 
-		return score;
+		int comboScale = (int)Mathf.Pow(2, combo);
+		return score * comboScale;
 	}
 
 	private int calculateExp(int addedScore) {
-		// TODO:
-		return addedScore * 2;
+		return addedScore;
+	}
+
+	private void modifyExp(int exp) {
+		_exp += exp;
+		if (_exp >= _expNextLevel) {
+			_exp -= _expNextLevel;
+			_level++;
+			onLevelUp();
+		}
+
+		invalidUI();
+	}
+
+	private void onLevelUp() {
+		if (_level < 6) {
+			// TODO: more up next chess
+		}
+
+		_trashChance++;
+		_backwardsChance++;
+
+		invalidUI();
+	}
+
+	private void modifyScore(int score, PawnType scorePawnType) {
+		_score += score;
+		modifyExp(calculateExp(score));
+		invalidUI();
+		_titleLayer.setScorePawnType(scorePawnType);
 	}
 
 	private IEnumerator eliminateAdjacentPawns() {
@@ -440,12 +473,9 @@ public class MainState : MonoBehaviour {
 
 		for (int i = 0; i < _pawnListToEliminate.Count; ++i) {
 			ArrayList pawnList = (ArrayList)_pawnListToEliminate[i];
-			int addedScore = calculateScore(pawnList);
-			_score += addedScore;
-			_exp += calculateExp(addedScore);
-
 			concludeEliminateStats(pawnList);
-			invalidUI();
+			int addedScore = calculateScore(pawnList, _combo);
+			modifyScore(addedScore, ((Pawn)pawnList[0]).type);
 
 			foreach (Pawn pawn in pawnList) {
 				destroyPawn(pawn, true, "eliminate");
@@ -475,7 +505,6 @@ public class MainState : MonoBehaviour {
 	class EliminateStats {
 		public int continuousEliminatePawnCount;
 		public int comboByLastMove;
-		public int comboStoredBeforeJudge;
 		public bool trashChanceGained;
 		public bool backwardsChanceGained;
 		public bool[] eliminateRowFlags;
@@ -492,12 +521,14 @@ public class MainState : MonoBehaviour {
 	EliminateStats _eliminateStats;
 
 	private void resetEliminateStats(Side turn) {
+		_combo = 0;
+		invalidUI();
+
 		_eliminateStats.enableStats = turn == Side.Self;
 		_eliminateStats.continuousEliminatePawnCount = 0;
 		_eliminateStats.comboByLastMove = 0;
 		_eliminateStats.trashChanceGained = false;
 		_eliminateStats.backwardsChanceGained = false;
-		_eliminateStats.comboStoredBeforeJudge = _combo;
 		for (int i = 0; i < _eliminateStats.eliminateRowFlags.Length; ++i) {
 			_eliminateStats.eliminateRowFlags[i] = false;
 		}
@@ -512,7 +543,7 @@ public class MainState : MonoBehaviour {
 		_eliminateStats.continuousEliminatePawnCount += pawnList.Count;
 
 		if (_eliminateStats.comboByLastMove > 1) {
-			_combo = _eliminateStats.comboStoredBeforeJudge + _eliminateStats.comboByLastMove;
+			_combo = _eliminateStats.comboByLastMove - 1;
 			invalidUI();
 		}
 
@@ -750,18 +781,19 @@ public class MainState : MonoBehaviour {
 		int gridSize = BoardWidth * BoardHeight;
 		_grids = new Pawn[gridSize];
 		_gridFlags = new GridFlag[2, gridSize];
-
-		initTraverseIndice();
-
-		prepareNextPawn(Side.Self);
-		prepareNextPawn(Side.Opposite);
-
+	
 		_scoreText = gameObject.transform.Find("Background/ScoreLabel/Score").GetComponent<Text>();
 		_comboText = gameObject.transform.Find("Background/ComboLabel/Combo").GetComponent<Text>();
-		_nextPawnImage = gameObject.transform.Find("Background/UpNextLabel/NextPawn").GetComponent<Image>();
 		_backChanceText = gameObject.transform.Find("Background/TitleLayer/BtnBack/Count").GetComponent<Text>();
 		_trashChanceText = gameObject.transform.Find("Background/TitleLayer/BtnTrash/Count").GetComponent<Text>();
+		_levelText = gameObject.transform.Find("Background/TitleLayer/Level").GetComponent<Text>();
 		_expBar = gameObject.transform.Find("Background/TitleLayer/ExpBar").GetComponent<Image>();
+		_titleLayer = gameObject.transform.Find("Background/TitleLayer").GetComponent<TitleLayer>();
+		_nextPawnBoard = gameObject.transform.Find("Background/NextPawnBoard").GetComponent<NextPawnBoard>();
+
+		initTraverseIndice();
+		prepareNextPawn(Side.Self);
+		prepareNextPawn(Side.Opposite);
 	}
 
 	public void restart(Hashtable parameters) {
@@ -903,9 +935,16 @@ public class MainState : MonoBehaviour {
 			nextPawnType = _nextPawnTypes[(int)Side.Self];
 		}
 
-		_nextPawnImage.sprite = nextPawnType == PawnType.Black ? blackPawn : whitePawn;
+		if (_nextPawnStateInvalid) {
+			ArrayList nextPawnTypes = new ArrayList();
+			nextPawnTypes.Add(nextPawnType);
+			_nextPawnBoard.setNextPawns(nextPawnTypes);
+			_nextPawnStateInvalid = false;
+		}
+
 		_backChanceText.text = _backwardsChance.ToString();
 		_trashChanceText.text = _trashChance.ToString();
+		_levelText.text = "LEVEL " + _level;
 
 		float expScale = (float)_exp / _expNextLevel;
 		_expBar.transform.localScale = new Vector3(expScale, 1, 1);

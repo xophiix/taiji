@@ -105,11 +105,12 @@ PlayerSettings:
   AndroidSplashScreenScale: 0
   AndroidKeystoreName: 
   AndroidKeyaliasName: 
-  resolutionDialogBanner: {fileID: 0}
+  resolutionDialogBanner: {fileID: 2800000, guid: fa8ecd85ef35c4a76b25a725cef5309b,
+    type: 3}
   m_BuildTargetIcons:
   - m_BuildTarget: 
     m_Icons:
-    - m_Icon: {fileID: 2800000, guid: e03c0b0dc360344c19e02671ae08bbd6, type: 3}
+    - m_Icon: {fileID: 2800000, guid: fa8ecd85ef35c4a76b25a725cef5309b, type: 3}
       m_Size: 128
   m_BuildTargetBatching: []
   webPlayerTemplate: APPLICATION:Default
