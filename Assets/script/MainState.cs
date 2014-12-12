@@ -39,12 +39,12 @@ public class MainState : MonoBehaviour {
 		set { _gameMode = value; }
 	}
 
-	private Side _turn = Side.Self;
-	private GameState _gameState = GameState.WaitingPutPawn;
+	private Side _turn = Side.Opposite;
+	public GameState _gameState = GameState.WaitingPutPawn;
 	private bool _paused;
 	private GameMode _gameMode = GameMode.AI;
-	private PawnType[] _nextPawnTypes = new PawnType[(int)Side.Count];
-	private Pawn[] _lastPutPawns = new Pawn[(int)Side.Count];
+	private ArrayList _nextPawnTypes = new ArrayList();
+	private ArrayList[] _lastPutPawns = new ArrayList[(int)Side.Count];
 	private int _score;
 	private int _exp = 0;
 	private int _expNextLevel = 100;
@@ -53,25 +53,140 @@ public class MainState : MonoBehaviour {
 	private int _trashChance; 			// chance to cancel opposite's last pawn
 	private int _backwardsChance; 		// chance to cancel opposite's last pawn
 	private int _lastUsedBackwardsLock;
+	private Pawn _selectingPawn;
 
 	class Pawn {
-		public int gridIndex;
-		public Vector2 gridPos = new Vector2();
-		public PawnType type;
-		private int _neighborOppositeCount;
+		public Pawn(PawnType type, int gridX, int gridY, Side side, MainState container) {
+			_container = container;
+			_obj = (GameObject)Instantiate(container.PawnPrefab, Vector3.zero, Quaternion.identity);
+			_obj.transform.SetParent(container._chessBoard.transform, true);
+			_obj.transform.localScale = Vector3.one;
+
+			this.type = type;
+			this.side = side;
+			this.gridIndex = container.gridPosToIndex(gridX, gridY);
+			this.neighborOppositeCount = container.getNeighborOppoCount(type, _gridPos);
+
+			_container._pawns.Add(this);
+		}
+
+		public void destroy(bool justUnRef = false, string message = "", object msgParam = null) {
+			_container._pawns.Remove(this);
+			_container._grids[this.gridIndex] = null;
+			
+			if (_container._lastPutPawns[(int)Side.Self].Count > 0) {
+				if (_container._lastPutPawns[(int)Side.Self][0] == this) {
+					_container._lastPutPawns[(int)Side.Self].Clear();
+				}
+			}
+			
+			if (_container._lastPutPawns[(int)Side.Opposite].Count > 0) {
+				int indexInList = _container._lastPutPawns[(int)Side.Opposite].IndexOf(this);
+				if (indexInList >= 0) {
+					_container._lastPutPawns[(int)Side.Opposite].RemoveAt(indexInList);
+				}
+			}
+
+			if (_container._selectingPawn == this) {
+				this.selected = false;
+				_container._selectingPawn = null;
+			}
+
+			if (_obj != null) {
+				if (!justUnRef) {
+					Destroy(_obj);
+				} else {
+					if (message.Length > 0) {
+						_obj.SendMessage(message, msgParam);
+					}
+				}
+				
+				_obj = null;
+			}
+		}
+
+		public int gridIndex {
+			get { return _gridIndex; }
+			set {
+				if (_gridIndex >= 0) {
+					_container._grids[_gridIndex] = null;
+				}
+
+				_gridIndex = value;
+
+				if (_gridIndex >= 0) {
+					_container._grids[_gridIndex] = this;
+					_gridPos = _container.gridIndexToPos(value);
+					posUpdated();
+				}
+			}
+		}
+
+		public Vector2 gridPos {
+			get { return _gridPos; }
+			set {
+				_gridPos = value;
+				if (_gridIndex >= 0) {
+					_container._grids[_gridIndex] = null;
+				}
+
+				_gridIndex = _container.gridPosToIndex(_gridPos);
+
+				if (_gridIndex >= 0) {
+					_container._grids[_gridIndex] = this;
+					posUpdated();
+				}
+			}
+		}
+
+		private void posUpdated() {
+			if (_obj != null) {
+				Vector2 posInChessBoard = _container.convertIndexToPosInBoard((int)_gridPos.x, (int)_gridPos.y);
+				_obj.transform.localPosition = new Vector3(posInChessBoard.x, posInChessBoard.y, 0);
+			}
+		}
 
 		public int neighborOppositeCount {
 			get { return _neighborOppositeCount; }
 			set {
 				_neighborOppositeCount = value;
-				if (this.obj != null) {
-					this.obj.SendMessage("setNeighborCountMark", value);
+				if (_obj != null) {
+					_obj.SendMessage("setNeighborCountMark", value);
 				}
 			}
 		}
 
-		public GameObject obj;
-		public Side side;
+		public bool selected {
+			get { return _selected; }
+			set {
+				_selected = value;
+				if (_obj != null) {
+					_obj.SendMessage("select", value);
+				}
+			}
+		}
+
+		public PawnType type {
+			get { return _type; }
+			set {
+				_type = value;
+				if (_obj != null) {
+					_obj.GetComponent<PawnDisplayer>().pawnType = type;
+				}
+			}
+		}
+
+		public Side side {
+			get; set;
+		}
+				
+		private int _neighborOppositeCount;
+		private GameObject _obj;
+		private PawnType _type;
+		private MainState _container;
+		private int _gridIndex = -1;
+		private Vector2 _gridPos;
+		private bool _selected;
 	};
 
 	private ArrayList _pawns = new ArrayList();
@@ -112,15 +227,42 @@ public class MainState : MonoBehaviour {
 	bool _waitingForOppoSide;
 
 	void performAIMove() {
-		int gridIndex = getRandomEmptyPawnGridIndex();
-		if (gridIndex >= 0) {
-			Vector2 gridPos = gridIndexToPos(gridIndex);
-			Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, _nextPawnTypes[(int)_turn], _turn);
-			if (pawn != null) {
-				_lastPutPawns[(int)_turn] = pawn;
-				prepareNextPawn(_turn);
-				_turn = Side.Self;
+		_lastPutPawns[(int)_turn].Clear();
+		if (_pawns.Count == _grids.Length) {
+			_gameState = GameState.GameOver;
+			return;
+		}
+
+		bool randomStep = true;
+		int maxSearchIteration = 8;
+
+		for (int i = 0; i < _nextPawnTypes.Count;) {
+			int gridIndex = getRandomEmptyPawnGridIndex(randomStep, maxSearchIteration);
+			if (gridIndex < 0) {
+				randomStep = false;
+				maxSearchIteration = 1;
+				gridIndex = getRandomEmptyPawnGridIndex(randomStep, maxSearchIteration);
 			}
+
+			if (gridIndex >= 0) {
+				Vector2 gridPos = gridIndexToPos(gridIndex);
+				Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, (PawnType)_nextPawnTypes[i], _turn);
+				if (pawn != null) {
+					_lastPutPawns[(int)_turn].Add(pawn);
+				}
+
+				if (_pawns.Count == _grids.Length) {
+					_gameState = GameState.GameOver;
+					break;
+				}
+
+				++i;
+			}
+		}
+
+		if (_gameState != GameState.GameOver) {
+			prepareNextPawn();
+			_turn = Side.Self;
 		}
 	}
 
@@ -160,23 +302,58 @@ public class MainState : MonoBehaviour {
 			}
 
 			if (waitInput) {
+				if (_pawns.Count == 0) {
+					_turn = Side.Opposite;
+					return;
+				}
+
 				if (Input.anyKeyDown) {
 					Vector2 gridIndice;
 					if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
-						Pawn pawn = putPawn((int)gridIndice.x, (int)gridIndice.y, _nextPawnTypes[(int)_turn], _turn);
+						Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
+						Debug.Log("select grid pos " + gridIndice + ", pawn" + pawn);
 						if (pawn != null) {
-							if (_turn == Side.Self) {
-								if (_lastUsedBackwardsLock > 0) {
-									--_lastUsedBackwardsLock;
-								}
+							if (_selectingPawn == null) {
+								_selectingPawn = pawn;
+								_selectingPawn.selected = true;
+							} else if (_selectingPawn == pawn) {
+								_selectingPawn.selected = false;
+								_selectingPawn = null;
+								return;
 							}
+						} else {
+							// move selecting pawn to here
+							if (_selectingPawn != null) {
+								int preGridIndex = _selectingPawn.gridIndex;
+								_selectingPawn.gridPos = gridIndice;
+								_selectingPawn.selected = false;
 
-							_lastPutPawns[(int)_turn] = pawn;
-							prepareNextPawn(_turn);
-							startWaitingOppoSide(_gameMode == GameMode.AI ? 1.0f : 0.0f);
-							_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
+								_lastPutPawns[(int)_turn].Clear();
+								_lastPutPawns[(int)_turn].Add(_selectingPawn);
+								_lastPutPawns[(int)_turn].Add(preGridIndex);
+
+								_selectingPawn = null;
+
+								updateScenePawnState();
+
+								if (_turn == Side.Self) {
+									if (_lastUsedBackwardsLock > 0) {
+										--_lastUsedBackwardsLock;
+									}
+								}
+								
+
+
+								startWaitingOppoSide(_gameMode == GameMode.AI ? 1.0f : 0.0f);
+								_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
+							}
 						}
-					};
+					} else {
+						if (_selectingPawn != null) {
+							_selectingPawn.selected = false;
+							_selectingPawn = null;
+						}
+					}
 				}
 			}
 		} else if (_gameState == GameState.SelectingPawnToTrash) {
@@ -184,16 +361,18 @@ public class MainState : MonoBehaviour {
 				Vector2 gridIndice;
 				if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
 					Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
-					if (pawn != null && pawn.side == _turn) {
+					if (pawn != null) {
 						--_trashChance;
 						invalidUI();
-						destroyPawn(pawn, true, "eliminate");
+						pawn.destroy(true, "eliminate");
 						_gameState = GameState.WaitingPutPawn;
 					} else if (pawn == null) {
 						_gameState = GameState.WaitingPutPawn;
 					}
 				};
 			}
+		} else if (_gameState == GameState.GameOver) {
+
 		}
 	}
 
@@ -218,11 +397,21 @@ public class MainState : MonoBehaviour {
 		return true;
 	}
 
-	private void prepareNextPawn(Side side) {
-		float prob = Random.Range(0.0f, 1.0f);
-		_nextPawnTypes[(int)side] = prob > 0.5 ? PawnType.Black : PawnType.White;
+	private void prepareNextPawn() {
+		int newPawnCount = Random.Range(1, 6);
+
+		_nextPawnTypes.Clear();
+		for (int i = 0; i < newPawnCount; ++i) {
+			float prob = Random.Range(0.0f, 1.0f);
+			_nextPawnTypes.Add(prob > 0.5 ? PawnType.Black : PawnType.White);
+		}
+
 		_nextPawnStateInvalid = true;
 		invalidUI();
+	}
+
+	public bool paused() {
+		return _paused;
 	}
 
 	public void pause(bool value) {
@@ -245,15 +434,29 @@ public class MainState : MonoBehaviour {
 		}
 
 		bool use = false;
-		int side = (int)Side.Opposite;
-		if (_lastPutPawns[side] != null) {
-			destroyPawn(_lastPutPawns[side], true, "eliminate");
+		int side = (int)Side.Self;
+		Pawn lastSelfMovePawn = null;
+		if (_lastPutPawns[side].Count > 0) {
+			lastSelfMovePawn = (Pawn)_lastPutPawns[side][0];
+			lastSelfMovePawn.gridIndex = (int)_lastPutPawns[side][1];
 			use = true;
+
+			_lastPutPawns[side].Clear();
 		}
 
-		side = (int)Side.Self;
-		if (_lastPutPawns[side] != null) {
-			destroyPawn(_lastPutPawns[side], true, "eliminate");
+		side = (int)Side.Opposite;
+		if (_lastPutPawns[side].Count > 0) {
+			for (int i = 0; i < _lastPutPawns[side].Count; ) {
+				Pawn pawn = (Pawn)_lastPutPawns[side][i];
+				if (pawn == lastSelfMovePawn) {
+					++i;
+					continue;
+				}
+
+				pawn.destroy(true, "eliminate");
+			}
+
+			_lastPutPawns[side].Clear();
 			use = true;
 		}
 
@@ -265,7 +468,7 @@ public class MainState : MonoBehaviour {
 	}
 
 	public void onBtnQuit() {
-		pause (true);
+		pause(true);
 		GameInit.instance().startMenu.SetActive(true);
 		//Instantiate(startMenuPrefab);
 	}
@@ -286,7 +489,7 @@ public class MainState : MonoBehaviour {
 	}
 
 	#region game logic
-	private int getRandomEmptyPawnGridIndex(int maxIteration = 8) {
+	private int getRandomEmptyPawnGridIndex(bool randomStep = true, int maxIteration = 8) {
 		float dirProb = Random.Range(0.0f, 1.0f);
 		maxIteration = Random.Range(1, maxIteration);
 		int interation = 0;
@@ -304,7 +507,7 @@ public class MainState : MonoBehaviour {
 					}
 				}
 				
-				index += Random.Range(1, 5);
+				index += randomStep ? Random.Range(1, 5) : 1;
 			}
 		} else {
 			index = gridLength - 1;
@@ -317,7 +520,7 @@ public class MainState : MonoBehaviour {
 					}
 				}
 				
-				index -= Random.Range(1, 5);
+				index -= randomStep ? Random.Range(1, 5) : 1;
 			}
 		}
 
@@ -330,6 +533,18 @@ public class MainState : MonoBehaviour {
 		return new Vector2(x, y);
 	}
 
+	private int gridPosToIndex(Vector2 gridPos) {
+		return gridPosToIndex((int)gridPos.x, (int)gridPos.y);
+	}
+
+	private int gridPosToIndex(int gridX, int gridY) {
+		if (gridX < 0 || gridX >= BoardWidth || gridY < 0 || gridY >= BoardHeight) {
+			return -1;
+		}
+		
+		return (int)(gridX + gridY * BoardWidth);
+	}
+	
 	private Vector2 convertIndexToPosInBoard(int gridX, int gridY) {
 		return new Vector2(
 			(gridX + 0.5f) * _boardLayout.gridSize.x,
@@ -343,27 +558,7 @@ public class MainState : MonoBehaviour {
 			return null;
 		}
 
-		int gridIndex = gridY * BoardWidth + gridX;
-		Pawn pawn = new Pawn();
-		pawn.gridIndex = gridIndex;
-		pawn.gridPos = gridIndexToPos(gridIndex);
-		pawn.type = type;
-		pawn.side = side;
-
-		Vector2 posInChessBoard = convertIndexToPosInBoard(gridX, gridY);
-		GameObject pawnObject = (GameObject)Instantiate(PawnPrefab, Vector3.zero, Quaternion.identity);
-
-		pawnObject.transform.SetParent(_chessBoard.transform, true);
-		pawnObject.transform.localPosition = new Vector3(posInChessBoard.x, posInChessBoard.y, 0);
-		pawnObject.transform.localScale = Vector3.one;
-
-		pawnObject.GetComponent<PawnDisplayer>().pawnType = type;
-		pawn.obj = pawnObject;
-		pawn.neighborOppositeCount = getNeighborOppoCount(type, pawn.gridPos);
-
-		_pawns.Add(pawn);
-		_grids[gridIndex] = pawn;
-
+		Pawn pawn = new Pawn(type, gridX, gridY, side, this);
 		updateScenePawnState(pawn);
 		return pawn;
 	}
@@ -478,7 +673,7 @@ public class MainState : MonoBehaviour {
 			modifyScore(addedScore, ((Pawn)pawnList[0]).type);
 
 			foreach (Pawn pawn in pawnList) {
-				destroyPawn(pawn, true, "eliminate");
+				pawn.destroy(true, "eliminate");
 			}
 
 			pawnList.Clear();
@@ -781,7 +976,10 @@ public class MainState : MonoBehaviour {
 		int gridSize = BoardWidth * BoardHeight;
 		_grids = new Pawn[gridSize];
 		_gridFlags = new GridFlag[2, gridSize];
-	
+
+		_lastPutPawns[(int)Side.Self] = new ArrayList();
+		_lastPutPawns[(int)Side.Opposite] = new ArrayList();
+
 		_scoreText = gameObject.transform.Find("Background/ScoreLabel/Score").GetComponent<Text>();
 		_comboText = gameObject.transform.Find("Background/ComboLabel/Combo").GetComponent<Text>();
 		_backChanceText = gameObject.transform.Find("Background/TitleLayer/BtnBack/Count").GetComponent<Text>();
@@ -792,32 +990,30 @@ public class MainState : MonoBehaviour {
 		_nextPawnBoard = gameObject.transform.Find("Background/NextPawnBoard").GetComponent<NextPawnBoard>();
 
 		initTraverseIndice();
-		prepareNextPawn(Side.Self);
-		prepareNextPawn(Side.Opposite);
+		prepareNextPawn();
 	}
 
 	public void restart(Hashtable parameters) {
 		while (_pawns.Count > 0) {
-			destroyPawn((Pawn)_pawns[_pawns.Count - 1]);
+			((Pawn)_pawns[_pawns.Count - 1]).destroy();
 		}
 
 		_pawnListToEliminate.Clear();
 		_pawns.Clear();
 
-		_backwardsChance = 0;
-		_trashChance = 0;
+		_backwardsChance = 1;
+		_trashChance = 1;
 		_score = 0;
 		_combo = 0;
 		_gameState = GameState.WaitingPutPawn;
 		_gameMode = parameters.Contains("gameMode") ? (GameMode)parameters["gameMode"] : GameMode.AI;
-		_turn = Side.Self;
+		_turn = Side.Opposite;
 
 		resetEliminateStats(_turn);
 		pause(false);
 		invalidUI();
 
-		prepareNextPawn(Side.Self);
-		prepareNextPawn(Side.Opposite);
+		prepareNextPawn();
 	}
 
 	private void initTraverseIndice() {
@@ -897,48 +1093,12 @@ public class MainState : MonoBehaviour {
 		}
 	}
 
-	private void destroyPawn(Pawn pawn, bool justUnRef = false, string message = "", object msgParam = null) {
-		if (pawn == null) {
-			return;
-		}
-
-		_pawns.Remove(pawn);
-		_grids[pawn.gridIndex] = null;
-
-		if (_lastPutPawns[(int)Side.Self] == pawn) {
-			_lastPutPawns[(int)Side.Self] = null;
-		}
-
-		if (_lastPutPawns[(int)Side.Opposite] == pawn) {
-			_lastPutPawns[(int)Side.Opposite] = null;
-		}
-
-		if (!justUnRef) {
-			Destroy(pawn.obj);
-		} else {
-			if (message.Length > 0) {
-				pawn.obj.SendMessage(message, msgParam);
-			}
-		}
-
-		pawn.obj = null;
-	}
-
 	private void updateUI() {
 		_scoreText.text = _score.ToString();
 		_comboText.text = _combo.ToString();
 
-		PawnType nextPawnType;
-		if (_gameMode == GameMode.Self) {
-			nextPawnType = _nextPawnTypes[(int)_turn];
-		} else {
-			nextPawnType = _nextPawnTypes[(int)Side.Self];
-		}
-
 		if (_nextPawnStateInvalid) {
-			ArrayList nextPawnTypes = new ArrayList();
-			nextPawnTypes.Add(nextPawnType);
-			_nextPawnBoard.setNextPawns(nextPawnTypes);
+			_nextPawnBoard.setNextPawns(_nextPawnTypes);
 			_nextPawnStateInvalid = false;
 		}
 

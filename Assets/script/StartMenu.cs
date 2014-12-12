@@ -9,14 +9,15 @@ public class StartMenu : MonoBehaviour {
 
 	private void initToggleState() {
 		GameObject gameMainUI = GameInit.instance().mainUI;
+		MainState mainState = gameMainUI.GetComponent<MainState>();
 		Transform resumeButton = gameObject.transform.Find("Panel/ButtonLayer/Resume");
-		resumeButton.gameObject.SetActive(gameMainUI.activeSelf);
+		resumeButton.gameObject.SetActive(gameMainUI.activeSelf && mainState.paused());
 
 		_aiModeToggle = gameObject.transform.Find("Panel/ToggleAIMode").GetComponent<Toggle>();
 		_selfModeToggle = gameObject.transform.Find("Panel/ToggleSelfMode").GetComponent<Toggle>();
 	
 		if (gameMainUI.activeSelf) {
-			MainState.GameMode gameMode = gameMainUI.GetComponent<MainState>().gameMode;
+			MainState.GameMode gameMode = mainState.gameMode;
 			if (gameMode == MainState.GameMode.AI) {
 				_aiModeToggle.isOn = true;
 			} else if (gameMode == MainState.GameMode.Self) {

@@ -26,33 +26,34 @@ public class NextPawnBoard : MonoBehaviour {
 			_pawnImages = new ArrayList();
 		}
 
-		if (_pawnImages.Count < _pawns.Count) {
-			int addCount = _pawns.Count - _pawnImages.Count;
-			int index = _pawnImages.Count;
-			for (int i = 0; i < addCount; ++i, ++index) {
-				GameObject newPawnImage = (GameObject)Instantiate(nextPawnPrefab);
-				newPawnImage.transform.SetParent(gameObject.transform);
-				_pawnImages.Add(newPawnImage);
+		if (_pawns != null) {
+			if (_pawnImages.Count < _pawns.Count) {
+				int addCount = _pawns.Count - _pawnImages.Count;
+				int index = _pawnImages.Count;
+				for (int i = 0; i < addCount; ++i, ++index) {
+					GameObject newPawnImage = (GameObject)Instantiate(nextPawnPrefab);
+					newPawnImage.transform.SetParent(gameObject.transform);
+					_pawnImages.Add(newPawnImage);
+				}
 			}
-		}
-
-		if (_pawnImages.Count > _pawns.Count) {
-			for (int i = _pawns.Count; i < _pawnImages.Count; ++i) {
-				GameObject pawnImage = (GameObject)_pawnImages[i];
-				Destroy(pawnImage);
-			}
-
-			_pawnImages.RemoveRange(_pawns.Count, _pawnImages.Count - _pawns.Count);
-		}
+			
+			if (_pawnImages.Count > _pawns.Count) {
+				for (int i = _pawns.Count; i < _pawnImages.Count; ++i) {
+					GameObject pawnImage = (GameObject)_pawnImages[i];
+					Destroy(pawnImage);
+				}
 				
-		for (int i = 0; i < _pawnImages.Count; ++i) {
-			GameObject pawnImage = (GameObject)_pawnImages[i];
-			Vector3 position = new Vector3();
-			position.y = (i / GRID_COLUMN) * _gridHeight;
-			position.x = (i % GRID_COLUMN) * _gridWidth;
-			pawnImage.transform.localPosition = position;
-			Debug.Log("pawn on board " + i + " pos: " + position);
-			pawnImage.GetComponent<Image>().sprite = (MainState.PawnType)_pawns[i] == MainState.PawnType.Black ? blackPawnSprite : whitePawnSprite;
+				_pawnImages.RemoveRange(_pawns.Count, _pawnImages.Count - _pawns.Count);
+			}
+			
+			for (int i = 0; i < _pawnImages.Count; ++i) {
+				GameObject pawnImage = (GameObject)_pawnImages[i];
+				Vector3 position = new Vector3();
+				position.y = (i / GRID_COLUMN) * _gridHeight;
+				position.x = (i % GRID_COLUMN) * _gridWidth;
+				pawnImage.transform.localPosition = position;
+				pawnImage.GetComponent<Image>().sprite = (MainState.PawnType)_pawns[i] == MainState.PawnType.Black ? blackPawnSprite : whitePawnSprite;
+			}
 		}
 	}
 
