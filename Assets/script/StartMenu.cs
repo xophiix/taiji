@@ -2,19 +2,19 @@
 using UnityEngine.UI;
 using System.Collections;
 
-public class StartMenu : MonoBehaviour {
+public class StartMenu : ScreenBase {
 	public GameObject gameMainUIPrefab;
 
 	Toggle _aiModeToggle, _selfModeToggle;
 
 	private void initToggleState() {
-		GameObject gameMainUI = GameInit.instance().mainUI;
+		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
 		MainState mainState = gameMainUI.GetComponent<MainState>();
-		Transform resumeButton = gameObject.transform.Find("Panel/ButtonLayer/Resume");
+		Transform resumeButton = gameObject.transform.Find("ButtonLayer/Resume");
 		resumeButton.gameObject.SetActive(gameMainUI.activeSelf && mainState.paused());
 
-		_aiModeToggle = gameObject.transform.Find("Panel/ToggleAIMode").GetComponent<Toggle>();
-		_selfModeToggle = gameObject.transform.Find("Panel/ToggleSelfMode").GetComponent<Toggle>();
+		_aiModeToggle = gameObject.transform.Find("ToggleAIMode").GetComponent<Toggle>();
+		_selfModeToggle = gameObject.transform.Find("ToggleSelfMode").GetComponent<Toggle>();
 	
 		if (gameMainUI.activeSelf) {
 			MainState.GameMode gameMode = mainState.gameMode;
@@ -48,13 +48,11 @@ public class StartMenu : MonoBehaviour {
 
 		parameters["gameMode"] = gameMode;
 
-		GameObject gameMainUI = GameInit.instance().mainUI;
-		if (!gameMainUI.activeSelf) {
-			gameMainUI.SetActive(true);
-		}
-
+		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
+		ScreenManager.show (gameMainUI, true);
 		gameMainUI.GetComponent<MainState>().restart(parameters);
-		this.gameObject.SetActive(false);
+
+		ScreenManager.show(gameObject, false);
 	}
 
 	public void onQuit() {
@@ -82,11 +80,13 @@ public class StartMenu : MonoBehaviour {
 	}
 
 	public void onSetting() {
-		Debug.Log("onSetting");
+		ScreenManager.show(gameObject, false);
+		ScreenManager.instance().show("SettingUI", true);
 	}
 
 	public void onAchievement() {
-		Debug.Log("onAchievement");
+		ScreenManager.show(gameObject, false);
+		ScreenManager.instance().show("AchievementUI", true);
 	}
 
 	public void onHighScores() {

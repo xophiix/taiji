@@ -2,7 +2,7 @@
 using System.Collections;
 using UnityEngine.UI;
 
-public class MainState : MonoBehaviour {
+public class MainState : ScreenBase {
 	public GameObject PawnPrefab;
 
 	public int BoardWidth = 8;
@@ -211,12 +211,13 @@ public class MainState : MonoBehaviour {
 	private Text _levelText;
 	private bool _uiInvalid = true;
 	private bool _nextPawnStateInvalid = true;
-	private TitleLayer _titleLayer;
+	private MainTitleLayer _titleLayer;
 	private NextPawnBoard _nextPawnBoard;
 
 	public GameObject startMenuPrefab;
 	
 	void Awake() {
+		base.Awake();
 		preInit();
 	}
 
@@ -420,7 +421,6 @@ public class MainState : MonoBehaviour {
 		}
 
 		_paused = value;
-		gameObject.GetComponent<GraphicRaycaster>().enabled = !value;
 	}
 
 	// revert AI and self last pawn and reput my pawn
@@ -469,8 +469,8 @@ public class MainState : MonoBehaviour {
 
 	public void onBtnQuit() {
 		pause(true);
-		GameInit.instance().startMenu.SetActive(true);
-		//Instantiate(startMenuPrefab);
+		ScreenManager.show(gameObject, false);
+		ScreenManager.instance().show("StartMenu", true);
 	}
 
 	// select and drop a self pawn 
@@ -968,7 +968,7 @@ public class MainState : MonoBehaviour {
 	}
 
 	private void init() {
-		_chessBoard = gameObject.transform.Find("Background/ChessBoard").GetComponent<Image>();
+		_chessBoard = gameObject.transform.Find("ChessBoard").GetComponent<Image>();
 		_boardLayout.size = _chessBoard.rectTransform.rect.size;
 		_boardLayout.gridSize.x = _boardLayout.size.x / BoardWidth;
 		_boardLayout.gridSize.y = _boardLayout.size.y / BoardHeight;
@@ -980,14 +980,14 @@ public class MainState : MonoBehaviour {
 		_lastPutPawns[(int)Side.Self] = new ArrayList();
 		_lastPutPawns[(int)Side.Opposite] = new ArrayList();
 
-		_scoreText = gameObject.transform.Find("Background/ScoreLabel/Score").GetComponent<Text>();
-		_comboText = gameObject.transform.Find("Background/ComboLabel/Combo").GetComponent<Text>();
-		_backChanceText = gameObject.transform.Find("Background/TitleLayer/BtnBack/Count").GetComponent<Text>();
-		_trashChanceText = gameObject.transform.Find("Background/TitleLayer/BtnTrash/Count").GetComponent<Text>();
-		_levelText = gameObject.transform.Find("Background/TitleLayer/Level").GetComponent<Text>();
-		_expBar = gameObject.transform.Find("Background/TitleLayer/ExpBar").GetComponent<Image>();
-		_titleLayer = gameObject.transform.Find("Background/TitleLayer").GetComponent<TitleLayer>();
-		_nextPawnBoard = gameObject.transform.Find("Background/NextPawnBoard").GetComponent<NextPawnBoard>();
+		_scoreText = gameObject.transform.Find("ScoreLabel/Score").GetComponent<Text>();
+		_comboText = gameObject.transform.Find("ComboLabel/Combo").GetComponent<Text>();
+		_backChanceText = gameObject.transform.Find("TitleLayer/BtnBack/Count").GetComponent<Text>();
+		_trashChanceText = gameObject.transform.Find("TitleLayer/BtnTrash/Count").GetComponent<Text>();
+		_levelText = gameObject.transform.Find("TitleLayer/Level").GetComponent<Text>();
+		_expBar = gameObject.transform.Find("TitleLayer/ExpBar").GetComponent<Image>();
+		_titleLayer = gameObject.transform.Find("TitleLayer").GetComponent<MainTitleLayer>();
+		_nextPawnBoard = gameObject.transform.Find("NextPawnBoard").GetComponent<NextPawnBoard>();
 
 		initTraverseIndice();
 		prepareNextPawn();

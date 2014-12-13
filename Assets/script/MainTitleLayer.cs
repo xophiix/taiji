@@ -2,7 +2,7 @@
 using System.Collections;
 using UnityEngine.UI;
 
-public class TitleLayer : MonoBehaviour {
+public class MainTitleLayer : MonoBehaviour {
 	public Color blackScoreColor = Color.black;
 	public Color whiteScoreColor = Color.white;
 	public Color blackScoreTextColor = Color.black;
