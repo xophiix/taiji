@@ -227,10 +227,16 @@ public class MainState : ScreenBase {
 
 	bool _waitingForOppoSide;
 
+	void gameOver() {
+		_gameState = GameState.GameOver;
+		pause(true);
+		ScreenManager.instance().show("GameOverUI", true);
+	}
+
 	void performAIMove() {
 		_lastPutPawns[(int)_turn].Clear();
 		if (_pawns.Count == _grids.Length) {
-			_gameState = GameState.GameOver;
+			gameOver();
 			return;
 		}
 
@@ -253,7 +259,7 @@ public class MainState : ScreenBase {
 				}
 
 				if (_pawns.Count == _grids.Length) {
-					_gameState = GameState.GameOver;
+					gameOver();
 					break;
 				}
 
@@ -993,7 +999,7 @@ public class MainState : ScreenBase {
 		prepareNextPawn();
 	}
 
-	public void restart(Hashtable parameters) {
+	public void restart(Hashtable parameters = null) {
 		while (_pawns.Count > 0) {
 			((Pawn)_pawns[_pawns.Count - 1]).destroy();
 		}
@@ -1006,7 +1012,8 @@ public class MainState : ScreenBase {
 		_score = 0;
 		_combo = 0;
 		_gameState = GameState.WaitingPutPawn;
-		_gameMode = parameters.Contains("gameMode") ? (GameMode)parameters["gameMode"] : GameMode.AI;
+		_gameMode = (parameters != null && parameters.Contains("gameMode")) ? 
+			(GameMode)parameters["gameMode"] : GameMode.AI;
 		_turn = Side.Opposite;
 
 		resetEliminateStats(_turn);

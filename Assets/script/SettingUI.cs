@@ -20,6 +20,22 @@ public class SettingUI : ScreenBase {
 
 	public void onHowToPlay() {
 		ScreenManager.show(gameObject, false);
-		ScreenManager.instance().show("HowToPlay", true);
+		ScreenManager.instance().show("HowToPlayUI", true);
+	}
+
+	public void onToggleSound() {
+
+	}
+
+	public void onToggleMusic() {
+		
+	}
+
+	public void onSignInGoogle() {
+		Debug.Log("onSignInGoogle");
+	}
+
+	public void onContactUs() {
+		Debug.Log("onContactUs");
 	}
 }
