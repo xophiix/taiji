@@ -331,7 +331,10 @@ public class MainState : ScreenBase {
 							} else if (_selectingPawn == pawn) {
 								_selectingPawn.selected = false;
 								_selectingPawn = null;
-								return;
+							} else {
+								_selectingPawn.selected = false;
+								_selectingPawn = pawn;
+								_selectingPawn.selected = true;
 							}
 						} else {
 							// move selecting pawn to here
@@ -352,8 +355,6 @@ public class MainState : ScreenBase {
 										--_lastUsedBackwardsLock;
 									}
 								}
-								
-
 
 								startWaitingOppoSide(_gameMode == GameMode.AI ? 1.0f : 0.0f);
 								_turn = _turn == Side.Self ? Side.Opposite : Side.Self;

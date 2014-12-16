@@ -2617,6 +2617,8 @@ MonoBehaviour:
   PawnPrefab: {fileID: 100002, guid: 9b1e09e876bb14ca8bd50f0597e8bb8f, type: 2}
   BoardWidth: 8
   BoardHeight: 8
+  InitNextPawnCount: 3
+  MaxNextPawnCount: 6
   _gameState: 0
   startMenuPrefab: {fileID: 100014, guid: 7dbad172a9bd34431974857df6df2051, type: 2}
   TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE: 4
