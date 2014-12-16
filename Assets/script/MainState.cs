@@ -6,8 +6,11 @@ using UnityEngine.UI;
 public class MainState : ScreenBase {
 	public GameObject PawnPrefab;
 
+	// constants
 	public int BoardWidth = 8;
 	public int BoardHeight = 8;
+	public int InitNextPawnCount = 3;
+	public int MaxNextPawnCount = 6;
 
 	public enum GameState {
 		WaitingPutPawn,
@@ -51,6 +54,7 @@ public class MainState : ScreenBase {
 	private int _expNextLevel = 100;
 	private int _level = 1;
 	private int _combo;
+	private int _newPawnCount;
 	private int _trashChance; 			// chance to cancel opposite's last pawn
 	private int _backwardsChance; 		// chance to cancel opposite's last pawn
 	private int _lastUsedBackwardsLock;
@@ -405,10 +409,8 @@ public class MainState : ScreenBase {
 	}
 
 	private void prepareNextPawn() {
-		int newPawnCount = Random.Range(1, 6);
-
 		_nextPawnTypes.Clear();
-		for (int i = 0; i < newPawnCount; ++i) {
+		for (int i = 0; i < _newPawnCount; ++i) {
 			float prob = Random.Range(0.0f, 1.0f);
 			_nextPawnTypes.Add(prob > 0.5 ? PawnType.Black : PawnType.White);
 		}
@@ -652,8 +654,8 @@ public class MainState : ScreenBase {
 	}
 
 	private void onLevelUp() {
-		if (_level < 6) {
-			// TODO: more up next chess
+		if (_newPawnCount < MaxNextPawnCount) {
+			++_newPawnCount;
 		}
 
 		_trashChance++;
@@ -1034,8 +1036,9 @@ public class MainState : ScreenBase {
 		_pawnListToEliminate.Clear();
 		_pawns.Clear();
 
-		_backwardsChance = 1;
-		_trashChance = 1;
+		_newPawnCount = InitNextPawnCount;
+		_backwardsChance = 0;
+		_trashChance = 0;
 		_score = 0;
 		_combo = 0;
 		_gameState = GameState.WaitingPutPawn;
