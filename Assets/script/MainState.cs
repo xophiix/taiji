@@ -1015,8 +1015,8 @@ public class MainState : ScreenBase {
 
 		_scoreText = gameObject.transform.Find("ScoreLabel/Score").GetComponent<Text>();
 		_comboText = gameObject.transform.Find("ComboLabel/Combo").GetComponent<Text>();
-		_backChanceText = gameObject.transform.Find("TitleLayer/BtnBack/Count").GetComponent<Text>();
-		_trashChanceText = gameObject.transform.Find("TitleLayer/BtnTrash/Count").GetComponent<Text>();
+		_backChanceText = gameObject.transform.Find("TitleLayer/Backwards/Count").GetComponent<Text>();
+		_trashChanceText = gameObject.transform.Find("TitleLayer/Trash/Count").GetComponent<Text>();
 		_levelText = gameObject.transform.Find("TitleLayer/Level").GetComponent<Text>();
 		_expBar = gameObject.transform.Find("TitleLayer/ExpBar").GetComponent<Image>();
 		_titleLayer = gameObject.transform.Find("TitleLayer").GetComponent<MainTitleLayer>();

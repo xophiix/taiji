@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.UI;
 
 public class MainTitleLayer : MonoBehaviour {
@@ -10,12 +11,17 @@ public class MainTitleLayer : MonoBehaviour {
 
 	private MainState.PawnType _scorePawnType = MainState.PawnType.Black;
 	private Image _titleImage;
-	private Text _levelText;
+	private List<Text> _textList = new List<Text>();
 
 	void Awake() {
 		_titleImage = gameObject.GetComponent<Image>();
-		_levelText = gameObject.transform.Find("Level").GetComponent<Text>();
-		setScorePawnType(_scorePawnType);
+		_textList.Add(gameObject.transform.Find("Level").GetComponent<Text>());
+		_textList.Add(gameObject.transform.Find("Trash/Count").GetComponent<Text>());
+		_textList.Add(gameObject.transform.Find("Backwards/Count").GetComponent<Text>());
+
+		foreach (Text text in _textList) {
+			text.color = whiteScoreTextColor;
+		}
 	}
 
 	// Use this for initialization
@@ -29,13 +35,19 @@ public class MainTitleLayer : MonoBehaviour {
 	}
 
 	public void setScorePawnType(MainState.PawnType type) {
+		Debug.Log("setScorePawnType");
 		_scorePawnType = type;
+		Color textColor;
 		if (type == MainState.PawnType.Black) {
 			_titleImage.color = blackScoreColor;
-			_levelText.color = blackScoreTextColor;
+			textColor = blackScoreTextColor;
 		} else {
 			_titleImage.color = whiteScoreColor;
-			_levelText.color = whiteScoreTextColor;
+			textColor = whiteScoreTextColor;
+		}
+
+		foreach (Text text in _textList) {
+			text.color = textColor;
 		}
 	}
 }
