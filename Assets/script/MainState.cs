@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.UI;
 
 public class MainState : ScreenBase {
@@ -339,9 +340,8 @@ public class MainState : ScreenBase {
 								_lastPutPawns[(int)_turn].Add(_selectingPawn);
 								_lastPutPawns[(int)_turn].Add(preGridIndex);
 
+								updateScenePawnState(true);
 								_selectingPawn = null;
-
-								updateScenePawnState();
 
 								if (_turn == Side.Self) {
 									if (_lastUsedBackwardsLock > 0) {
@@ -565,7 +565,7 @@ public class MainState : ScreenBase {
 		}
 
 		Pawn pawn = new Pawn(type, gridX, gridY, side, this);
-		updateScenePawnState(pawn);
+		updateScenePawnState();
 		return pawn;
 	}
 
@@ -627,7 +627,7 @@ public class MainState : ScreenBase {
 			}
 		}
 
-		int score = (int)Mathf.Pow(2, maxNeighborCount);
+		int score = (int)Mathf.Pow(2, maxNeighborCount + 1);
 		if (adjacentPawnList.Count > ADJACENT_COUNT_TO_ELIMINATE) {
 			score *= (int)Mathf.Pow(2, adjacentPawnList.Count - ADJACENT_COUNT_TO_ELIMINATE);
 		}
@@ -669,6 +669,19 @@ public class MainState : ScreenBase {
 		_titleLayer.setScorePawnType(scorePawnType);
 	}
 
+	private List<int> _newlyFinishedAchieves = new List<int>();
+
+	private void checkAchieve(int eliminateNeighborCount) {
+		int[] parameters = new int[]{ eliminateNeighborCount };
+		List<int> newlyFinishedAchieves = AchievementConfig.instance().checkAchieve(
+			AchievementConfig.Condition.CLEAR_BY_TYPE, parameters, GameInit.instance().finishedAchieves);
+
+		if (newlyFinishedAchieves.Count > 0) {
+			_newlyFinishedAchieves.AddRange(newlyFinishedAchieves);
+			GameInit.instance().saveAchieveChange();
+		}
+	}
+
 	private IEnumerator eliminateAdjacentPawns() {
 		_gameState = GameState.JudgingElimination;
 
@@ -677,6 +690,7 @@ public class MainState : ScreenBase {
 			concludeEliminateStats(pawnList);
 			int addedScore = calculateScore(pawnList, _combo);
 			modifyScore(addedScore, ((Pawn)pawnList[0]).type);
+			checkAchieve(((Pawn)pawnList[0]).neighborOppositeCount);
 
 			foreach (Pawn pawn in pawnList) {
 				pawn.destroy(true, "eliminate");
@@ -782,26 +796,28 @@ public class MainState : ScreenBase {
 		}
 	}
 
-	private void updateScenePawnState(Pawn startPawn = null) {
+	private void updateScenePawnState(bool triggerByUser = false) {
 		// traverse the map
 		_gameState = GameState.UpdatingPawnState;
-		if (startPawn == null) {
-			foreach (Pawn pawn in _pawns) {
-				pawn.neighborOppositeCount = getNeighborOppoCount(pawn.type, pawn.gridPos);
-			}
-		} else {
-			resetEliminateStats(_turn);
 
-			// only update adjacent grids
-			Vector2 startPawnPos = startPawn.gridPos;
-			for (int i = 0; i < NEIGHBOR_GRID_OFFSETS.Length; ++i) {
-				Vector2 offset = NEIGHBOR_GRID_OFFSETS[i];
-				Pawn pawn = getPawnAtPos((int)(offset.x + startPawnPos.x), (int)(offset.y + startPawnPos.y));
-				if (pawn != null && pawn.type != startPawn.type) {
-					++pawn.neighborOppositeCount;
-				}
-			}
+		foreach (Pawn pawn in _pawns) {
+			pawn.neighborOppositeCount = getNeighborOppoCount(pawn.type, pawn.gridPos);
 		}
+
+		if (triggerByUser) {
+			_newlyFinishedAchieves.Clear();
+			resetEliminateStats(_turn);
+		}
+
+		// only update adjacent grids
+		/*Vector2 startPawnPos = startPawn.gridPos;
+		for (int i = 0; i < NEIGHBOR_GRID_OFFSETS.Length; ++i) {
+			Vector2 offset = NEIGHBOR_GRID_OFFSETS[i];
+			Pawn pawn = getPawnAtPos((int)(offset.x + startPawnPos.x), (int)(offset.y + startPawnPos.y));
+			if (pawn != null && pawn.type != startPawn.type) {
+				++pawn.neighborOppositeCount;
+			}
+		}*/
 
 		// check same pawn adjacent	
 		_pawnListToEliminate.Clear();
@@ -810,9 +826,20 @@ public class MainState : ScreenBase {
 		if (_pawnListToEliminate.Count > 0) {
 			Invoke("startEliminateAdjacentPawns", 0.3f);
 		} else {
+			if (_newlyFinishedAchieves.Count > 0) {
+				notifyAchieveGet(_newlyFinishedAchieves);
+				_newlyFinishedAchieves.Clear();
+			}
+
 			_gameState = GameState.WaitingPutPawn;
 			invalidUI();
 		}
+	}
+
+	public void notifyAchieveGet(List<int> newlyFinishedAchieves) {
+		pause(true);
+		ScreenManager.instance().show("AchieveNotifyUI", true);
+		ScreenManager.instance().get("AchieveNotifyUI").GetComponent<AchieveNotifyUI>().setFinishedAchieveIds(newlyFinishedAchieves);
 	}
 
 	private void startEliminateAdjacentPawns() {
