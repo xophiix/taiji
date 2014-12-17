@@ -10,6 +10,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class AchievementConfig
 {
@@ -84,9 +85,15 @@ public class AchievementConfig
 		if (condition == Condition.CLEAR_BY_TYPE) {
 			foreach (AchieveItem item in achievesOnThisCondition) {
 				if (achieveParams[0] == item.parameters[0]) {
+					int pawnType = achieveParams[1];
 					if (!finishedAchieves.Contains(item.id)) {
-						finishedAchieves.Add(item.id);
-						justFinishedAchieveIds.Add(item.id);
+						int progress = PlayerPrefs.GetInt("achieve_progress_" + item.id);
+						progress |= 1 << pawnType;
+						if (progress == 2) {
+							PlayerPrefs.SetInt("achieve_progress_" + item.id, progress);
+							finishedAchieves.Add(item.id);
+							justFinishedAchieveIds.Add(item.id);
+						}
 					}
 				}
 			}

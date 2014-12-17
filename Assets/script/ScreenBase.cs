@@ -9,7 +9,11 @@ public class ScreenBase : MonoBehaviour {
 	void OnDestroy() {
 		ScreenManager.instance().unregisterScreen(gameObject.name);
 	}
-	
+
+	public virtual void onShow(bool show) {
+
+	}
+
 	// Update is called once per frame
 	void Update () {
 	

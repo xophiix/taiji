@@ -17,6 +17,11 @@ public class GameInit : MonoBehaviour {
 	}
 
 	void initPlayerDefaults() {
+		if (Application.isEditor) {
+			PlayerPrefs.DeleteAll();
+			PlayerPrefs.Save();
+		}
+
 		if (0 == PlayerPrefs.GetInt("first_create", 0)) {
 			PlayerPrefs.SetInt("first_create", 1);
 			PlayerPrefs.SetInt("finished_achieve_" + 7, 1);

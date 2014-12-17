@@ -22,8 +22,13 @@ public class AchieveNotifyUI : ScreenBase {
 	void Update () {
 	}
 
+	public override void onShow(bool show) {
+		if (show) {
+			SoundHub.instance().play("NewAchieve");
+		}
+	}
+
 	public void hide() {
-		ScreenManager.instance().get("GameMainUI").GetComponent<MainState>().pause(false);
 		ScreenManager.show(gameObject, false);
 	}
 
@@ -31,6 +36,7 @@ public class AchieveNotifyUI : ScreenBase {
 		if (_displayIndex >= _finishedAchieves.Count) {
 			hide();
 			ScreenManager.instance().show("AchievementUI", true);
+			ScreenManager.instance().get("AchievementUI").GetComponent<AchievementUI>().fromScreen = "GameMainUI";
 		}
 	}
 

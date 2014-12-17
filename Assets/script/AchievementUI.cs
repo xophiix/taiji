@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class AchievementUI : ScreenBase {
 	public GameObject achieveItemPrefab;
-
+	public string fromScreen;
 	private List<AchieveUIItem> _achieveUIItems = new List<AchieveUIItem>();
 	private List<Image> _achieveIcons = new List<Image>();
 
@@ -16,13 +16,24 @@ public class AchievementUI : ScreenBase {
 	}
 	
 	// Update is called once per frame
-	void Update () {
-	
+	void OnEnable() {
+		refresh();
+	}
+
+	override public void onShow(bool show) {
+		if (show) {
+			refresh();
+		}
 	}
 
 	public void onBack() {
 		ScreenManager.show(gameObject, false);
-		ScreenManager.instance().show("StartMenu", true);
+		string screen = fromScreen;
+		if (0 == screen.Length) {
+			screen = "StartMenu";
+		}
+
+		ScreenManager.instance().show(screen, true);
 	}
 
 	private void initAchieveUI() {
