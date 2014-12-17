@@ -55,6 +55,11 @@ public class ScreenManager
 		if (showOrHide) {
 			screen.GetComponent<RectTransform>().localPosition = Vector3.zero;
 		}
+
+		ScreenBase screenBase = screen.GetComponent<ScreenBase>();
+		if (screenBase != null) {
+			screenBase.onShow(showOrHide);
+		}
 	}
 
 	private Hashtable _namedScreens = new Hashtable();

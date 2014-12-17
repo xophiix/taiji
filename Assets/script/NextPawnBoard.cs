@@ -49,8 +49,8 @@ public class NextPawnBoard : MonoBehaviour {
 			for (int i = 0; i < _pawnImages.Count; ++i) {
 				GameObject pawnImage = (GameObject)_pawnImages[i];
 				Vector3 position = new Vector3();
-				position.y = (i / GRID_COLUMN) * _gridHeight;
-				position.x = (i % GRID_COLUMN) * _gridWidth;
+				position.y = (i / GRID_COLUMN) * _gridHeight + _gridHeight / 2;
+				position.x = (i % GRID_COLUMN) * _gridWidth + _gridWidth / 2;
 				pawnImage.transform.localPosition = position;
 				pawnImage.GetComponent<Image>().sprite = (MainState.PawnType)_pawns[i] == MainState.PawnType.Black ? blackPawnSprite : whitePawnSprite;
 			}

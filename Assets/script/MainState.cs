@@ -230,6 +230,12 @@ public class MainState : ScreenBase {
 		init();
 	}
 
+	public override void onShow(bool show) {
+		if (show) {
+			pause(false);
+		}
+	}
+
 	bool _waitingForOppoSide;
 
 	void gameOver() {
@@ -328,6 +334,7 @@ public class MainState : ScreenBase {
 							if (_selectingPawn == null) {
 								_selectingPawn = pawn;
 								_selectingPawn.selected = true;
+								SoundHub.instance().play("MoveBegin");
 							} else if (_selectingPawn == pawn) {
 								_selectingPawn.selected = false;
 								_selectingPawn = null;
@@ -335,6 +342,7 @@ public class MainState : ScreenBase {
 								_selectingPawn.selected = false;
 								_selectingPawn = pawn;
 								_selectingPawn.selected = true;
+								SoundHub.instance().play("MoveBegin");
 							}
 						} else {
 							// move selecting pawn to here
@@ -342,6 +350,7 @@ public class MainState : ScreenBase {
 								int preGridIndex = _selectingPawn.gridIndex;
 								_selectingPawn.gridPos = gridIndice;
 								_selectingPawn.selected = false;
+								SoundHub.instance().play("MoveEnd");
 
 								_lastPutPawns[(int)_turn].Clear();
 								_lastPutPawns[(int)_turn].Add(_selectingPawn);
@@ -375,6 +384,7 @@ public class MainState : ScreenBase {
 					Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
 					if (pawn != null) {
 						--_trashChance;
+						SoundHub.instance().play("Trash");
 						invalidUI();
 						pawn.destroy(true, "eliminate");
 						_gameState = GameState.WaitingPutPawn;
@@ -470,6 +480,7 @@ public class MainState : ScreenBase {
 		}
 
 		if (use) {
+			SoundHub.instance().play("Backwards");
 			--_backwardsChance;
 			invalidUI();
 			_lastUsedBackwardsLock = 2;
@@ -655,6 +666,8 @@ public class MainState : ScreenBase {
 	}
 
 	private void onLevelUp() {
+		SoundHub.instance().play("LevelUp");
+
 		if (_newPawnCount < MaxNextPawnCount) {
 			++_newPawnCount;
 		}
@@ -674,8 +687,8 @@ public class MainState : ScreenBase {
 
 	private List<int> _newlyFinishedAchieves = new List<int>();
 
-	private void checkAchieve(int eliminateNeighborCount) {
-		int[] parameters = new int[]{ eliminateNeighborCount };
+	private void checkAchieve(int eliminateNeighborCount, PawnType pawnType) {
+		int[] parameters = new int[]{ eliminateNeighborCount, (int)pawnType };
 		List<int> newlyFinishedAchieves = AchievementConfig.instance().checkAchieve(
 			AchievementConfig.Condition.CLEAR_BY_TYPE, parameters, GameInit.instance().finishedAchieves);
 
@@ -692,8 +705,13 @@ public class MainState : ScreenBase {
 			ArrayList pawnList = (ArrayList)_pawnListToEliminate[i];
 			concludeEliminateStats(pawnList);
 			int addedScore = calculateScore(pawnList, _combo);
-			modifyScore(addedScore, ((Pawn)pawnList[0]).type);
-			checkAchieve(((Pawn)pawnList[0]).neighborOppositeCount);
+
+			Pawn firstPawn = (Pawn)pawnList[0];
+			modifyScore(addedScore, firstPawn.type);
+			checkAchieve(firstPawn.neighborOppositeCount, firstPawn.type);
+
+			int eliminateSoundLevel = firstPawn.neighborOppositeCount / 2 + 1;
+			SoundHub.instance().play("Eliminate" + eliminateSoundLevel);
 
 			foreach (Pawn pawn in pawnList) {
 				pawn.destroy(true, "eliminate");

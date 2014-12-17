@@ -13,6 +13,12 @@ public class GameOverUI : ScreenBase {
 	
 	}
 
+	override public void onShow(bool show) {
+		if (show) {
+			SoundHub.instance().play("GameOver");
+		}
+	}
+
 	public void onShare() {
 		Debug.Log("onShare");
 	}
