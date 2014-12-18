@@ -29,12 +29,13 @@ public class AchieveNotifyUI : ScreenBase {
 	}
 
 	public void hide() {
+		ScreenManager.instance().get("GameMainUI").GetComponent<MainState>().pause(false);
 		ScreenManager.show(gameObject, false);
 	}
 
 	public void onGotoAchievement() {
 		if (_displayIndex >= _finishedAchieves.Count) {
-			hide();
+			ScreenManager.show(gameObject, false);
 			ScreenManager.instance().show("AchievementUI", true);
 			ScreenManager.instance().get("AchievementUI").GetComponent<AchievementUI>().fromScreen = "GameMainUI";
 		}
