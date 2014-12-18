@@ -115,6 +115,9 @@ public class PawnDisplayer : MonoBehaviour {
 
 	public void select(bool value) {
 		transform.localScale = value ? new Vector3(1.2f, 1.2f, 1f) : Vector3.one;
+		if (value) {
+			transform.SetAsLastSibling();
+		}
 	}
 }
 	

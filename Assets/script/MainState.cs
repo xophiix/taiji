@@ -59,6 +59,7 @@ public class MainState : ScreenBase {
 	private int _backwardsChance; 		// chance to cancel opposite's last pawn
 	private int _lastUsedBackwardsLock;
 	private Pawn _selectingPawn;
+	private float _selectTimeStamp;
 
 	class Pawn {
 		public Pawn(PawnType type, int gridX, int gridY, Side side, MainState container) {
@@ -184,6 +185,14 @@ public class MainState : ScreenBase {
 		public Side side {
 			get; set;
 		}
+
+		public bool dragging {
+			get; set;
+		}
+
+		public void setLocalPosition(Vector3 position) {
+			_obj.transform.localPosition = position;
+		}
 				
 		private int _neighborOppositeCount;
 		private GameObject _obj;
@@ -293,6 +302,10 @@ public class MainState : ScreenBase {
 		_waitingForOppoSide = false;
 	}
 
+	void FixedUpdate() {
+
+	}
+
 	void Update() {
 		if (_uiInvalid) {
 			updateUI();
@@ -325,54 +338,61 @@ public class MainState : ScreenBase {
 					return;
 				}
 
-				if (Input.anyKeyDown) {
+				if (Input.GetMouseButtonDown(0)) {
 					Vector2 gridIndice;
 					if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
 						Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
 						Debug.Log("select grid pos " + gridIndice + ", pawn" + pawn);
 						if (pawn != null) {
-							if (_selectingPawn == null) {
-								_selectingPawn = pawn;
-								_selectingPawn.selected = true;
-								SoundHub.instance().play("MoveBegin");
-							} else if (_selectingPawn == pawn) {
-								_selectingPawn.selected = false;
-								_selectingPawn = null;
+							if (_selectingPawn == pawn) {
+								if (!_selectingPawn.dragging) {
+									_selectingPawn.selected = false;
+									_selectingPawn = null;
+								}
 							} else {
-								_selectingPawn.selected = false;
+								if (_selectingPawn != null) {
+									_selectingPawn.selected = false;
+									_selectingPawn.dragging = true;
+								}
+
 								_selectingPawn = pawn;
 								_selectingPawn.selected = true;
+								_selectingPawn.dragging = true;
+								_selectTimeStamp = Time.time;
 								SoundHub.instance().play("MoveBegin");
 							}
 						} else {
-							// move selecting pawn to here
-							if (_selectingPawn != null) {
-								int preGridIndex = _selectingPawn.gridIndex;
-								_selectingPawn.gridPos = gridIndice;
-								_selectingPawn.selected = false;
-								SoundHub.instance().play("MoveEnd");
-
-								_lastPutPawns[(int)_turn].Clear();
-								_lastPutPawns[(int)_turn].Add(_selectingPawn);
-								_lastPutPawns[(int)_turn].Add(preGridIndex);
-
-								updateScenePawnState(true);
-								_selectingPawn = null;
-
-								if (_turn == Side.Self) {
-									if (_lastUsedBackwardsLock > 0) {
-										--_lastUsedBackwardsLock;
-									}
-								}
-
-								startWaitingOppoSide(_gameMode == GameMode.AI ? 1.0f : 0.0f);
-								_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
-							}
+							putSelectingPawn(gridIndice);
 						}
 					} else {
 						if (_selectingPawn != null) {
 							_selectingPawn.selected = false;
+							_selectingPawn.dragging = false;
 							_selectingPawn = null;
+						}
+					}
+				} else if (Input.GetMouseButton(0)) {
+					if (Time.time - _selectTimeStamp < 0.1) {
+						return;
+					}
+
+					if (_selectingPawn != null && _selectingPawn.dragging) {
+						Vector3 posInBoard = screenPosToPosInBoard(Input.mousePosition);
+						posInBoard.z = 0;
+						_selectingPawn.setLocalPosition(posInBoard);
+					}
+				} else if (Input.GetMouseButtonUp(0)) {
+					if (_selectingPawn != null && _selectingPawn.dragging) {
+						Vector2 gridIndice;
+						if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
+							Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
+							if (pawn != null) {
+								cancelDrag();
+							} else {
+								putSelectingPawn(gridIndice);
+							}
+						} else {
+							cancelDrag();
 						}
 					}
 				}
@@ -396,6 +416,46 @@ public class MainState : ScreenBase {
 		} else if (_gameState == GameState.GameOver) {
 
 		}
+	}
+
+	private void cancelDrag() {
+		if (_selectingPawn != null) {
+			_selectingPawn.gridIndex = _selectingPawn.gridIndex;
+			_selectingPawn.dragging = false;
+		}
+	}
+
+	private void putSelectingPawn(Vector2 gridIndice) {
+		// move selecting pawn to here
+		if (_selectingPawn != null) {
+			int preGridIndex = _selectingPawn.gridIndex;
+			_selectingPawn.gridPos = gridIndice;
+			_selectingPawn.selected = false;
+			_selectingPawn.dragging = false;
+
+			SoundHub.instance().play("MoveEnd");
+			
+			_lastPutPawns[(int)_turn].Clear();
+			_lastPutPawns[(int)_turn].Add(_selectingPawn);
+			_lastPutPawns[(int)_turn].Add(preGridIndex);
+			
+			updateScenePawnState(true);
+			_selectingPawn = null;
+			
+			if (_turn == Side.Self) {
+				if (_lastUsedBackwardsLock > 0) {
+					--_lastUsedBackwardsLock;
+				}
+			}
+			
+			startWaitingOppoSide(_gameMode == GameMode.AI ? 1.0f : 0.0f);
+			_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
+		}
+	}
+
+	private Vector3 screenPosToPosInBoard(Vector3 screenPosition) {
+		Vector3 worldPosition = Camera.main.ScreenToWorldPoint(screenPosition);
+		return _chessBoard.rectTransform.InverseTransformPoint(worldPosition);
 	}
 
 	private bool getGridIndexByScreenPosition(Vector3 screenPosition, out Vector2 gridIndice) {
