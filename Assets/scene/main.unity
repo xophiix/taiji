@@ -522,7 +522,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 287842853}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 4, y: -958.5}
@@ -2751,8 +2751,8 @@ RectTransform:
   - {fileID: 1534117142}
   - {fileID: 694568935}
   - {fileID: 118804521}
-  - {fileID: 1042447642}
   - {fileID: 81024345}
+  - {fileID: 1042447642}
   m_Father: {fileID: 328206158}
   m_RootOrder: 0
   m_AnchorMin: {x: .5, y: .5}
@@ -6825,7 +6825,7 @@ RectTransform:
   m_RootOrder: 5
   m_AnchorMin: {x: .5, y: 1}
   m_AnchorMax: {x: .5, y: 1}
-  m_AnchoredPosition: {x: -165, y: -27.9999695}
+  m_AnchoredPosition: {x: -165, y: -33.4599991}
   m_SizeDelta: {x: 126, y: 33}
   m_Pivot: {x: .5, y: .5}
 --- !u!114 &975963939
@@ -7252,7 +7252,7 @@ RectTransform:
   m_Children:
   - {fileID: 1566300901}
   m_Father: {fileID: 287842853}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -220, y: -279}
@@ -9226,23 +9226,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tiltParams:
   - center: {x: 0, y: -300, z: 0}
-    radius: 60
+    radius: 70
     initPos: {x: 0, y: 0, z: 0}
     child: {fileID: 1031035172}
     offsetScaleX: 1
     offsetScaleY: .300000012
   - center: {x: 0, y: -250, z: 0}
-    radius: 30
+    radius: 25
     initPos: {x: 0, y: 0, z: 0}
     child: {fileID: 461732287}
     offsetScaleX: 1
-    offsetScaleY: .5
+    offsetScaleY: .400000006
   - center: {x: 0, y: -200, z: 0}
-    radius: 20
+    radius: 10
     initPos: {x: 0, y: 0, z: 0}
     child: {fileID: 277786535}
     offsetScaleX: 1
-    offsetScaleY: .400000006
+    offsetScaleY: .699999988
 --- !u!1 &1371934690
 GameObject:
   m_ObjectHideFlags: 0

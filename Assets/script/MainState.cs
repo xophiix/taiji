@@ -14,6 +14,7 @@ public class MainState : ScreenBase {
 
 	public enum GameState {
 		WaitingPutPawn,
+		AIPuttingPawn,
 		UpdatingPawnState,
 		JudgingElimination,
 		SelectingPawnToTrash,
@@ -253,6 +254,35 @@ public class MainState : ScreenBase {
 		ScreenManager.instance().show("GameOverUI", true);
 	}
 
+
+	int _pawnCountOnBoardBeforePut;
+	List<Vector2> _gridIndiceForNextPawns = new List<Vector2>();
+
+	void onNextPawnsAllSentToBoard() {
+		Debug.Log("onNextPawnsAllSentToBoard");
+		for (int i = 0; i < _gridIndiceForNextPawns.Count; ++i) {
+			Vector2 gridPos = _gridIndiceForNextPawns[i];
+			Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, (PawnType)_nextPawnTypes[i], _turn);
+			if (pawn != null) {
+				_lastPutPawns[(int)_turn].Add(pawn);
+			}
+		}
+
+		if (_gameState != GameState.GameOver) {
+			_gameState = GameState.WaitingPutPawn;
+			prepareNextPawn();
+			_turn = Side.Self;
+		}
+	}
+
+	void onNextPawnSentToBoard() {
+		Debug.Log("onNextPawnSentToBoard");
+		++_pawnCountOnBoardBeforePut;
+		if (_pawnCountOnBoardBeforePut == _grids.Length) {
+			gameOver();
+		}
+	}
+
 	void performAIMove() {
 		_lastPutPawns[(int)_turn].Clear();
 		if (_pawns.Count == _grids.Length) {
@@ -262,6 +292,9 @@ public class MainState : ScreenBase {
 
 		bool randomStep = true;
 		int maxSearchIteration = 8;
+		_gameState = GameState.AIPuttingPawn;
+		_pawnCountOnBoardBeforePut = _pawns.Count;
+		_gridIndiceForNextPawns.Clear();
 
 		for (int i = 0; i < _nextPawnTypes.Count;) {
 			int gridIndex = getRandomEmptyPawnGridIndex(randomStep, maxSearchIteration);
@@ -273,24 +306,19 @@ public class MainState : ScreenBase {
 
 			if (gridIndex >= 0) {
 				Vector2 gridPos = gridIndexToPos(gridIndex);
-				Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, (PawnType)_nextPawnTypes[i], _turn);
-				if (pawn != null) {
-					_lastPutPawns[(int)_turn].Add(pawn);
-				}
-
-				if (_pawns.Count == _grids.Length) {
-					gameOver();
-					break;
-				}
-
+				_gridIndiceForNextPawns.Add(gridPos);
 				++i;
 			}
 		}
 
-		if (_gameState != GameState.GameOver) {
-			prepareNextPawn();
-			_turn = Side.Self;
+		List<Vector3> positions = new List<Vector3>();
+		for (int i = 0; i < _gridIndiceForNextPawns.Count; ++i) {
+			Vector2 gridPos = _gridIndiceForNextPawns[i];
+			positions.Add(convertIndexToWorldPos((int)gridPos.x, (int)gridPos.y));
 		}
+
+		Debug.Log("sendNextPawnsToBoard " + positions.Count);
+		_nextPawnBoard.sendNextPawnsToBoard(positions);
 	}
 
 	void startWaitingOppoSide(float delay) {
@@ -448,7 +476,7 @@ public class MainState : ScreenBase {
 				}
 			}
 			
-			startWaitingOppoSide(_gameMode == GameMode.AI ? 1.0f : 0.0f);
+			startWaitingOppoSide(_gameMode == GameMode.AI ? 0.3f : 0.0f);
 			_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
 		}
 	}
@@ -630,6 +658,11 @@ public class MainState : ScreenBase {
 			(gridX + 0.5f) * _boardLayout.gridSize.x,
 			(gridY + 0.5f) * _boardLayout.gridSize.y
 		);
+	}
+
+	private Vector3 convertIndexToWorldPos(int gridX, int gridY) {
+		Vector2 posInBoard = convertIndexToPosInBoard(gridX, gridY);
+		return _chessBoard.gameObject.transform.TransformPoint(new Vector3(posInBoard.x, posInBoard.y, 0));
 	}
 
 	private Pawn putPawn(int gridX, int gridY, PawnType type, Side side) {
