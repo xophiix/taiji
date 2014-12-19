@@ -26,7 +26,6 @@ public class SoundHub : MonoBehaviour {
 
 		for (int i = 0; i < transform.childCount; ++i) {
 			Transform child = transform.GetChild(i);
-			Debug.Log("child.gameObject.name" + child.gameObject.name);
 			_audioSources[child.gameObject.name] = child.audio;
 		}
 	}
