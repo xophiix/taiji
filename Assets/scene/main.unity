@@ -4372,7 +4372,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01cba841319104bdaa7561aec211470a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: MORE
+  title: 
 --- !u!114 &490940674
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5156,6 +5156,10 @@ Prefab:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 605138469}
+    - target: {fileID: 11400000, guid: fd114c793939240d5ab860bddd664a99, type: 2}
+      propertyPath: title
+      value: ACHIVEMENT
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: fd114c793939240d5ab860bddd664a99, type: 2}
   m_RootGameObject: {fileID: 1859688793}
@@ -7420,7 +7424,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01cba841319104bdaa7561aec211470a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: MORE
+  title: 
 --- !u!114 &1049985142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9796,7 +9800,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blackScoreColor: {r: .285282761, g: .282448113, b: .25680548, a: 1}
-  whiteScoreColor: {r: .709739566, g: .709718347, b: .709730446, a: 1}
+  whiteScoreColor: {r: .926154435, g: .914014876, b: .835421741, a: .800000012}
   blackScoreTextColor: {r: .926154435, g: .914014876, b: .835421741, a: .879999995}
   whiteScoreTextColor: {r: .285282761, g: .282448113, b: .25680548, a: .879999995}
 --- !u!114 &1534117144
@@ -11638,7 +11642,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01cba841319104bdaa7561aec211470a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: MORE
+  title: ACHIVEMENT
 --- !u!114 &1859688796
 MonoBehaviour:
   m_ObjectHideFlags: 0
