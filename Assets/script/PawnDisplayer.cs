@@ -3,8 +3,6 @@ using System.Collections;
 using UnityEngine.UI;
 
 public class PawnDisplayer : MonoBehaviour {
-	private float _curMarkAngle = Mathf.PI / 2;
-	private float _destMarkAngle;
 	public float rotateAngleSpeed = 0.03f;
 	public float alphaChangeSpeed = 0.03f;
 
@@ -13,7 +11,12 @@ public class PawnDisplayer : MonoBehaviour {
 
 	private float _destAlpha;
 	private float _curAlpha;
-	
+	private bool _alphaReached = true;
+
+	private float _curMarkAngle = Mathf.PI / 2;
+	private float _destMarkAngle;
+	private bool _markAngleReached = true;
+
 	float MARK_DISTANCE;
 	const float MARK_RADIAN_UNIT = Mathf.PI / 4;
 
@@ -51,47 +54,68 @@ public class PawnDisplayer : MonoBehaviour {
 	}
 
 	void FixedUpdate() {
+		bool preAlphaReached = _alphaReached;
+		bool preMarkAngleReached = _markAngleReached;
+
 		bool angleChanged = false;
-		if (_curMarkAngle < _destMarkAngle) {
-			_curMarkAngle += rotateAngleSpeed;
-			if (_curMarkAngle > _destMarkAngle) {
-				_curMarkAngle = _destMarkAngle;
-			}
-			angleChanged = true;
-		} else if (_curMarkAngle > _destMarkAngle) {
-			_curMarkAngle -= rotateAngleSpeed;
+		bool markAngleReached = false;
+
+		if (!_markAngleReached) {
 			if (_curMarkAngle < _destMarkAngle) {
-				_curMarkAngle = _destMarkAngle;
+				_curMarkAngle += rotateAngleSpeed;
+				if (_curMarkAngle > _destMarkAngle) {
+					_curMarkAngle = _destMarkAngle;
+				}
+				angleChanged = true;
+			} else if (_curMarkAngle > _destMarkAngle) {
+				_curMarkAngle -= rotateAngleSpeed;
+				if (_curMarkAngle < _destMarkAngle) {
+					_curMarkAngle = _destMarkAngle;
+				}
+				angleChanged = true;
 			}
-			angleChanged = true;
+			
+			if (angleChanged) {
+				Vector2 markPos = new Vector2();
+				markPos.x = MARK_DISTANCE * Mathf.Cos(_curMarkAngle);
+				markPos.y = MARK_DISTANCE * Mathf.Sin(_curMarkAngle);
+				_mark.transform.localPosition = new Vector3(markPos.x, markPos.y, 0);
+				if (_curMarkAngle == _destMarkAngle) {
+					_markAngleReached = true;
+				}
+			}
 		}
-		
-		if (angleChanged) {
-			Vector2 markPos = new Vector2();
-			markPos.x = MARK_DISTANCE * Mathf.Cos(_curMarkAngle);
-			markPos.y = MARK_DISTANCE * Mathf.Sin(_curMarkAngle);
-			_mark.transform.localPosition = new Vector3(markPos.x, markPos.y, 0);
-		}
+
 
 		bool alphaChanged = false;
-		if (_curAlpha < _destAlpha) {
-			_curAlpha += alphaChangeSpeed;
-			if (_curAlpha > _destAlpha) {
-				_curAlpha = _destAlpha;
-			}
-			alphaChanged = true;
-		} else if (_curAlpha > _destAlpha) {
-			_curAlpha -= alphaChangeSpeed;
+		if (!_alphaReached) {
 			if (_curAlpha < _destAlpha) {
-				_curAlpha = _destAlpha;
+				_curAlpha += alphaChangeSpeed;
+				if (_curAlpha > _destAlpha) {
+					_curAlpha = _destAlpha;
+				}
+				alphaChanged = true;
+			} else if (_curAlpha > _destAlpha) {
+				_curAlpha -= alphaChangeSpeed;
+				if (_curAlpha < _destAlpha) {
+					_curAlpha = _destAlpha;
+				}
+				alphaChanged = true;
 			}
-			alphaChanged = true;
+			
+			if (alphaChanged) {
+				Color color = _markImage.color;
+				color.a = _curAlpha;
+				_markImage.color = color;
+			}
+
+			if (_curAlpha == _destAlpha) {
+				_alphaReached = true;
+			}
 		}
 
-		if (alphaChanged) {
-			Color color = _markImage.color;
-			color.a = _curAlpha;
-			_markImage.color = color;
+		if ((!preAlphaReached || !preMarkAngleReached) && _alphaReached && _markAngleReached) {
+			gameObject.SendMessageUpwards("onPawnNeighborMarkUpdateDone");
 		}
 	}
 
@@ -111,6 +135,9 @@ public class PawnDisplayer : MonoBehaviour {
 		if (neighborCount > 0) {
 			_destMarkAngle = Mathf.PI / 2 - MARK_RADIAN_UNIT * (neighborCount - 1);
 		}
+
+		_alphaReached = _curAlpha == _destAlpha;
+		_markAngleReached = _curMarkAngle == _destMarkAngle;
 	}
 
 	public void select(bool value) {

@@ -13,6 +13,9 @@ public class GameInit : MonoBehaviour {
 	void Awake() {
 		_instance = this;
 		initPlayerDefaults();
+	}
+
+	void Start() {
 		ScreenManager.instance().show("StartMenu", true);
 	}
 

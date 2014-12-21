@@ -267,14 +267,15 @@ public class MainState : ScreenBase {
 	List<Vector2> _gridIndiceForNextPawns = new List<Vector2>();
 
 	void onNextPawnsAllSentToBoard() {
-		Debug.Log("onNextPawnsAllSentToBoard");
 		for (int i = 0; i < _gridIndiceForNextPawns.Count; ++i) {
 			Vector2 gridPos = _gridIndiceForNextPawns[i];
-			Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, (PawnType)_nextPawnTypes[i], _turn);
+			Pawn pawn = putPawn((int)gridPos.x, (int)gridPos.y, (PawnType)_nextPawnTypes[i], _turn, true);
 			if (pawn != null) {
 				_lastPutPawns[(int)_turn].Add(pawn);
 			}
 		}
+
+		updateScenePawnState();
 
 		if (_gameState != GameState.GameOver) {
 			_gameState = GameState.WaitingPutPawn;
@@ -304,20 +305,29 @@ public class MainState : ScreenBase {
 		_pawnCountOnBoardBeforePut = _pawns.Count;
 		_gridIndiceForNextPawns.Clear();
 
+		HashSet<int> indiceToPutNextPawns = new HashSet<int>();
 		for (int i = 0; i < _nextPawnTypes.Count;) {
-			int gridIndex = getRandomEmptyPawnGridIndex(randomStep, maxSearchIteration);
+			int gridIndex = getRandomEmptyPawnGridIndex(randomStep, maxSearchIteration, indiceToPutNextPawns);
 			if (gridIndex < 0) {
 				randomStep = false;
 				maxSearchIteration = 1;
-				gridIndex = getRandomEmptyPawnGridIndex(randomStep, maxSearchIteration);
+				gridIndex = getRandomEmptyPawnGridIndex(randomStep, maxSearchIteration, indiceToPutNextPawns);
 			}
 
 			if (gridIndex >= 0) {
 				Vector2 gridPos = gridIndexToPos(gridIndex);
 				_gridIndiceForNextPawns.Add(gridPos);
+				indiceToPutNextPawns.Add(gridIndex);
 				++i;
 			}
 		}
+
+		/*int[] testGridIndice = new int[]{0, 1, 2, 8, 16, 25, 34};
+		_gridIndiceForNextPawns.Clear();
+		for (int i = 0; i < testGridIndice.Length; ++i) {
+			Vector2 gridPos = gridIndexToPos(testGridIndice[i]);
+			_gridIndiceForNextPawns.Add(gridPos);
+		}*/
 
 		List<Vector3> positions = new List<Vector3>();
 		for (int i = 0; i < _gridIndiceForNextPawns.Count; ++i) {
@@ -497,7 +507,7 @@ public class MainState : ScreenBase {
 		_selectingPawn.selected = false;
 		_selectingPawn.destroy(true, "eliminate");
 		_selectingPawn = null;
-		_trashButton.animator.Play("Normal");
+		_trashButton.animator.SetTrigger("Normal");
 		updateScenePawnState(true);
 	}
 
@@ -568,6 +578,11 @@ public class MainState : ScreenBase {
 			float prob = Random.Range(0.0f, 1.0f);
 			_nextPawnTypes.Add(prob > 0.5 ? PawnType.Black : PawnType.White);
 		}
+
+		/*_nextPawnTypes.Clear();
+		for (int i = 0; i < 7; ++i) {
+			_nextPawnTypes.Add(PawnType.Black);
+		}*/
 
 		_nextPawnStateInvalid = true;
 		invalidUI();
@@ -645,7 +660,7 @@ public class MainState : ScreenBase {
 		}
 
 		_gameState = GameState.SelectingPawnToTrash;
-		_trashButton.animator.Play("TrashSelecting");
+		_trashButton.animator.SetTrigger("EnterTrash");
 	}
 
 	private void invalidUI() {
@@ -653,7 +668,7 @@ public class MainState : ScreenBase {
 	}
 
 	#region game logic
-	private int getRandomEmptyPawnGridIndex(bool randomStep = true, int maxIteration = 8) {
+	private int getRandomEmptyPawnGridIndex(bool randomStep = true, int maxIteration = 8, HashSet<int> excludeIndice = null) {
 		float dirProb = Random.Range(0.0f, 1.0f);
 		maxIteration = Random.Range(1, maxIteration);
 		int interation = 0;
@@ -663,7 +678,7 @@ public class MainState : ScreenBase {
 
 		if (dirProb < 0.5) {
 			while (index < gridLength) {
-				if (_grids[index] == null) {
+				if (_grids[index] == null && !excludeIndice.Contains(index)) {
 					++interation;
 					if (interation >= maxIteration) {
 						foundIndex = index;
@@ -676,7 +691,7 @@ public class MainState : ScreenBase {
 		} else {
 			index = gridLength - 1;
 			while (index >= 0) {
-				if (_grids[index] == null) {
+				if (_grids[index] == null && !excludeIndice.Contains(index)) {
 					++interation;
 					if (interation >= maxIteration) {
 						foundIndex = index;
@@ -721,14 +736,17 @@ public class MainState : ScreenBase {
 		return _chessBoard.gameObject.transform.TransformPoint(new Vector3(posInBoard.x, posInBoard.y, 0));
 	}
 
-	private Pawn putPawn(int gridX, int gridY, PawnType type, Side side) {
+	private Pawn putPawn(int gridX, int gridY, PawnType type, Side side, bool skipUpdateScene = false) {
 		Pawn pawnAtPos = getPawnAtPos(gridX, gridY);
 		if (pawnAtPos != null) {
 			return null;
 		}
 
 		Pawn pawn = new Pawn(type, gridX, gridY, side, this);
-		updateScenePawnState();
+		if (!skipUpdateScene) {
+			updateScenePawnState();
+		}
+
 		return pawn;
 	}
 
@@ -966,12 +984,44 @@ public class MainState : ScreenBase {
 		}
 	}
 
+	private int _updatingPawnCountToWait;
+
+	private void onPawnNeighborMarkUpdateDone() {
+		--_updatingPawnCountToWait;
+		if (_updatingPawnCountToWait <= 0) {
+			collectAndEliminateAdjacentPawns();
+		}
+	}
+
+	private void collectAndEliminateAdjacentPawns() {
+		// check same pawn adjacent	
+		_pawnListToEliminate.Clear();
+		collectAdjacentPawns();
+		
+		if (_pawnListToEliminate.Count > 0) {
+			Invoke("startEliminateAdjacentPawns", 0.3f);
+		} else {
+			if (_newlyFinishedAchieves.Count > 0) {
+				notifyAchieveGet(_newlyFinishedAchieves);
+				_newlyFinishedAchieves.Clear();
+			}
+			
+			_gameState = GameState.WaitingPutPawn;
+			invalidUI();
+		}
+	}
+
 	private void updateScenePawnState(bool triggerByUser = false) {
 		// traverse the map
 		_gameState = GameState.UpdatingPawnState;
 
+		_updatingPawnCountToWait = 0;
 		foreach (Pawn pawn in _pawns) {
+			int preNeighborOppositeCount = pawn.neighborOppositeCount;
 			pawn.neighborOppositeCount = getNeighborOppoCount(pawn.type, pawn.gridPos);
+			if (preNeighborOppositeCount != pawn.neighborOppositeCount) {
+				++_updatingPawnCountToWait;
+			}
 		}
 
 		if (triggerByUser) {
@@ -979,6 +1029,9 @@ public class MainState : ScreenBase {
 			resetEliminateStats(_turn);
 		}
 
+		if (_updatingPawnCountToWait > 0) {
+			return;
+		}
 		// only update adjacent grids
 		/*Vector2 startPawnPos = startPawn.gridPos;
 		for (int i = 0; i < NEIGHBOR_GRID_OFFSETS.Length; ++i) {
@@ -989,21 +1042,7 @@ public class MainState : ScreenBase {
 			}
 		}*/
 
-		// check same pawn adjacent	
-		_pawnListToEliminate.Clear();
-		collectAdjacentPawns();
-
-		if (_pawnListToEliminate.Count > 0) {
-			Invoke("startEliminateAdjacentPawns", 0.3f);
-		} else {
-			if (_newlyFinishedAchieves.Count > 0) {
-				notifyAchieveGet(_newlyFinishedAchieves);
-				_newlyFinishedAchieves.Clear();
-			}
-
-			_gameState = GameState.WaitingPutPawn;
-			invalidUI();
-		}
+		collectAndEliminateAdjacentPawns();
 	}
 
 	public void notifyAchieveGet(List<int> newlyFinishedAchieves) {
@@ -1137,9 +1176,12 @@ public class MainState : ScreenBase {
 				foreach (Pawn pawnInAdjacent in adjacentPawnList) {
 					GridFlag gridFlag = _gridFlags[(int)checkType, pawnInAdjacent.gridIndex];
 					if (gridFlag.adjacentPawnList != null) {
-						mergeAdjacentPawnList(checkType, preCollectedAdjacentList, gridFlag.adjacentPawnList);
+						if (gridFlag.adjacentPawnList != preCollectedAdjacentList) {
+							mergeAdjacentPawnList(checkType, preCollectedAdjacentList, gridFlag.adjacentPawnList);
+						}
 					} else {
-						_gridFlags[(int)checkType, pawnInAdjacent.gridIndex].adjacentPawnList = adjacentPawnList ;
+						_gridFlags[(int)checkType, pawnInAdjacent.gridIndex].adjacentPawnList = preCollectedAdjacentList;
+						preCollectedAdjacentList.Add(pawnInAdjacent);
 					}
 				}
 			} else {
@@ -1207,8 +1249,8 @@ public class MainState : ScreenBase {
 		_pawns.Clear();
 
 		_newPawnCount = InitNextPawnCount;
-		_backwardsChance = 0;
-		_trashChance = 5;
+		_backwardsChance = 1;
+		_trashChance = 0;
 		_score = 0;
 		_combo = 0;
 		_gameState = GameState.WaitingPutPawn;
@@ -1302,12 +1344,15 @@ public class MainState : ScreenBase {
 
 	private void updateUI() {
 		_scoreText.text = _score.ToString();
-		_comboText.text = _combo.ToString();
+		_comboText.text = _combo.ToString() + " X";
 
 		if (_nextPawnStateInvalid) {
 			_nextPawnBoard.setNextPawns(_nextPawnTypes);
 			_nextPawnStateInvalid = false;
 		}
+
+		updateButtonState(_backButton, _backwardsChance > 0);
+		updateButtonState(_trashButton, _trashChance > 0);
 
 		_backChanceText.text = _backwardsChance.ToString();
 		_trashChanceText.text = _trashChance.ToString();
@@ -1315,6 +1360,16 @@ public class MainState : ScreenBase {
 
 		float expScale = (float)_exp / _expNextLevel;
 		_expBar.transform.localScale = new Vector3(expScale, 1, 1);
+	}
+
+	private void updateButtonState(Button button, bool enabled) {
+		bool preEnabled = _backButton.enabled;
+		button.enabled = enabled;
+		if (preEnabled && !button.enabled) {
+			button.animator.SetTrigger("Disabled");
+		} else if (!preEnabled && button.enabled) {
+			button.animator.SetTrigger("Normal");
+		}
 	}
 
 	#endregion

@@ -29,6 +29,8 @@ public class ScreenManager
 
 	public void registerScreen(string name, GameObject screen) {
 		_namedScreens[name] = screen;
+		Debug.Log ("register screen " + name);
+		screen.SetActive(false);
 	}
 
 	public void unregisterScreen(string name) {
@@ -44,6 +46,7 @@ public class ScreenManager
 	}
 
 	public void show(string name, bool showOrHide) {
+		Debug.Log ("show screen " + name);
 		GameObject screen = (GameObject)_namedScreens[name];
 		if (screen != null) {
 			show(screen, showOrHide);
