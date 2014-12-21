@@ -291,6 +291,10 @@ Prefab:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 950027197}
+    - target: {fileID: 11400000, guid: fd114c793939240d5ab860bddd664a99, type: 2}
+      propertyPath: title
+      value: HOW TO PLAY
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: fd114c793939240d5ab860bddd664a99, type: 2}
   m_RootGameObject: {fileID: 1049985139}
@@ -4372,7 +4376,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01cba841319104bdaa7561aec211470a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: 
+  title: MORE
 --- !u!114 &490940674
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7424,7 +7428,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01cba841319104bdaa7561aec211470a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: 
+  title: HOW TO PLAY
 --- !u!114 &1049985142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10076,6 +10080,10 @@ Prefab:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 2068353215}
+    - target: {fileID: 11400000, guid: fd114c793939240d5ab860bddd664a99, type: 2}
+      propertyPath: title
+      value: MORE
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: fd114c793939240d5ab860bddd664a99, type: 2}
   m_RootGameObject: {fileID: 490940672}
@@ -10930,7 +10938,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 3
+  m_Transition: 0
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: .927060425, g: .977941155, b: .783791065, a: 1}

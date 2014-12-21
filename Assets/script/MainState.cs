@@ -60,6 +60,7 @@ public class MainState : ScreenBase {
 	private int _backwardsChance; 		// chance to cancel opposite's last pawn
 	private int _lastUsedBackwardsLock;
 	private Pawn _selectingPawn;
+	private Pawn _selectingPawnToTrash;
 	private float _selectTimeStamp;
 
 	class Pawn {
@@ -97,6 +98,11 @@ public class MainState : ScreenBase {
 			if (_container._selectingPawn == this) {
 				this.selected = false;
 				_container._selectingPawn = null;
+			}
+
+			if (_container._selectingPawnToTrash == this) {
+				this.selected = false;
+				_container._selectingPawnToTrash = null;
 			}
 
 			if (_obj != null) {
@@ -223,6 +229,8 @@ public class MainState : ScreenBase {
 	private Image _expBar;
 	private Text _trashChanceText;
 	private Text _backChanceText;
+	private Button _trashButton;
+	private Button _backButton;
 	private Text _levelText;
 	private bool _uiInvalid = true;
 	private bool _nextPawnStateInvalid = true;
@@ -426,24 +434,71 @@ public class MainState : ScreenBase {
 				}
 			}
 		} else if (_gameState == GameState.SelectingPawnToTrash) {
-			if (Input.anyKeyDown && _turn == Side.Self) {
+			if (Input.GetMouseButtonDown(0)) {
 				Vector2 gridIndice;
 				if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
 					Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
 					if (pawn != null) {
-						--_trashChance;
-						SoundHub.instance().play("Trash");
-						invalidUI();
-						pawn.destroy(true, "eliminate");
-						_gameState = GameState.WaitingPutPawn;
-					} else if (pawn == null) {
-						_gameState = GameState.WaitingPutPawn;
+						if (_selectingPawn == pawn) {
+							if (!_selectingPawn.dragging) {
+								_selectingPawn.selected = false;
+								_selectingPawn = null;
+							}
+						} else {
+							if (_selectingPawn != null) {
+								_selectingPawn.selected = false;
+								_selectingPawn.dragging = true;
+							}
+							
+							_selectingPawn = pawn;
+							_selectingPawn.selected = true;
+							_selectingPawn.dragging = true;
+							_selectTimeStamp = Time.time;
+							SoundHub.instance().play("MoveBegin");
+						}
 					}
-				};
+				} else {
+					putPawnToTrash();
+				}
+			} else if (Input.GetMouseButton(0)) {
+				if (Time.time - _selectTimeStamp < 0.1) {
+					return;
+				}
+				
+				if (_selectingPawn != null && _selectingPawn.dragging) {
+					Vector3 posInBoard = screenPosToPosInBoard(Input.mousePosition);
+					posInBoard.z = 0;
+					_selectingPawn.setLocalPosition(posInBoard);
+				}
+			} else if (Input.GetMouseButtonUp(0)) {
+				if (_selectingPawn != null && _selectingPawn.dragging) {
+					Vector2 gridIndice;
+					if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
+						cancelDrag();
+					} else {
+						putPawnToTrash();
+					}
+				}
 			}
 		} else if (_gameState == GameState.GameOver) {
 
 		}
+	}
+
+	private void putPawnToTrash() {
+		if (_selectingPawn == null || _trashChance <= 0) {
+			_gameState = GameState.WaitingPutPawn;
+			return;
+		}
+
+		--_trashChance;
+		SoundHub.instance().play("Trash");
+		invalidUI();
+		_selectingPawn.selected = false;
+		_selectingPawn.destroy(true, "eliminate");
+		_selectingPawn = null;
+		_trashButton.animator.Play("Normal");
+		updateScenePawnState(true);
 	}
 
 	private void cancelDrag() {
@@ -590,6 +645,7 @@ public class MainState : ScreenBase {
 		}
 
 		_gameState = GameState.SelectingPawnToTrash;
+		_trashButton.animator.Play("TrashSelecting");
 	}
 
 	private void invalidUI() {
@@ -1131,6 +1187,8 @@ public class MainState : ScreenBase {
 		_comboText = gameObject.transform.Find("ComboLabel/Combo").GetComponent<Text>();
 		_backChanceText = gameObject.transform.Find("TitleLayer/Backwards/Count").GetComponent<Text>();
 		_trashChanceText = gameObject.transform.Find("TitleLayer/Trash/Count").GetComponent<Text>();
+		_backButton = gameObject.transform.Find("TitleLayer/Backwards").GetComponent<Button>();
+		_trashButton = gameObject.transform.Find("TitleLayer/Trash").GetComponent<Button>();
 		_levelText = gameObject.transform.Find("TitleLayer/Level").GetComponent<Text>();
 		_expBar = gameObject.transform.Find("TitleLayer/ExpBar").GetComponent<Image>();
 		_titleLayer = gameObject.transform.Find("TitleLayer").GetComponent<MainTitleLayer>();
@@ -1150,7 +1208,7 @@ public class MainState : ScreenBase {
 
 		_newPawnCount = InitNextPawnCount;
 		_backwardsChance = 0;
-		_trashChance = 0;
+		_trashChance = 5;
 		_score = 0;
 		_combo = 0;
 		_gameState = GameState.WaitingPutPawn;
