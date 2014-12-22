@@ -27,6 +27,10 @@ public class TiltViewEffect : MonoBehaviour {
 			param.initPos = param.child.transform.localPosition;
 		}
 	}
+
+	void OnDisable() {
+		_dragging = _touchDown = false;
+	}
 	
 	// Update is called once per frame
 	void Update () {

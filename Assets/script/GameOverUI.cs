@@ -1,18 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class GameOverUI : ScreenBase {
-
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
-
 	override public void onShow(bool show) {
 		if (show) {
 			SoundHub.instance().play("GameOver");
@@ -28,5 +18,12 @@ public class GameOverUI : ScreenBase {
 		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
 		MainState mainState = gameMainUI.GetComponent<MainState>();
 		mainState.restart();
+	}
+
+	public void setGameRecord(GameRecord record) {
+		gameObject.transform.Find("Panel/StatsLayer/HighScoreTitle/HighScore").GetComponent<Text>().text = record.highScore.ToString();
+		gameObject.transform.Find("Panel/StatsLayer/ScoreTitle/Score").GetComponent<Text>().text = record.score.ToString();
+		gameObject.transform.Find("Panel/StatsLayer/MaxComboTitle/MaxCombo").GetComponent<Text>().text = record.maxCombo.ToString();
+		gameObject.transform.Find("Panel/StatsLayer/TurnsTitle/Turns").GetComponent<Text>().text = record.turns.ToString();
 	}
 }

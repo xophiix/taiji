@@ -45,12 +45,14 @@ public class ScreenManager
 		return (GameObject)_namedScreens[name];
 	}
 
-	public void show(string name, bool showOrHide) {
+	public GameObject show(string name, bool showOrHide) {
 		Debug.Log ("show screen " + name);
 		GameObject screen = (GameObject)_namedScreens[name];
 		if (screen != null) {
 			show(screen, showOrHide);
 		}
+
+		return screen;
 	}
 
 	public static void show(GameObject screen, bool showOrHide) {

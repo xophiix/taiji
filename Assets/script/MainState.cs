@@ -220,6 +220,13 @@ public class MainState : ScreenBase {
 	};
 
 	private BoardLayout _boardLayout = new BoardLayout();
+	private GameRecord _gameRecord = new GameRecord();
+
+	private void updateGameRecord() {
+		PlayerPrefs.SetInt("high_score", _gameRecord.highScore);
+		PlayerPrefs.SetInt("max_combo", _gameRecord.maxCombo);
+		PlayerPrefs.Save();
+	}
 
 	// ui
 	private Image _chessBoard;
@@ -236,8 +243,6 @@ public class MainState : ScreenBase {
 	private bool _nextPawnStateInvalid = true;
 	private MainTitleLayer _titleLayer;
 	private NextPawnBoard _nextPawnBoard;
-
-	public GameObject startMenuPrefab;
 	
 	void Awake() {
 		base.Awake();
@@ -259,7 +264,8 @@ public class MainState : ScreenBase {
 	void gameOver() {
 		_gameState = GameState.GameOver;
 		pause(true);
-		ScreenManager.instance().show("GameOverUI", true);
+		GameObject gameOverUI = ScreenManager.instance().show("GameOverUI", true);
+		gameOverUI.GetComponent<GameOverUI>().setGameRecord(_gameRecord);
 	}
 
 
@@ -285,16 +291,15 @@ public class MainState : ScreenBase {
 	}
 
 	void onNextPawnSentToBoard() {
-		Debug.Log("onNextPawnSentToBoard");
 		++_pawnCountOnBoardBeforePut;
-		if (_pawnCountOnBoardBeforePut == _grids.Length) {
+		if (_pawnCountOnBoardBeforePut >= _grids.Length) {
 			gameOver();
 		}
 	}
 
 	void performAIMove() {
 		_lastPutPawns[(int)_turn].Clear();
-		if (_pawns.Count == _grids.Length) {
+		if (_pawns.Count >= _grids.Length) {
 			gameOver();
 			return;
 		}
@@ -850,6 +855,12 @@ public class MainState : ScreenBase {
 		modifyExp(calculateExp(score));
 		invalidUI();
 		_titleLayer.setScorePawnType(scorePawnType);
+
+		_gameRecord.score = _score;
+		if (_score > _gameRecord.highScore) {
+			_gameRecord.highScore = _score;
+			updateGameRecord();
+		}
 	}
 
 	private List<int> _newlyFinishedAchieves = new List<int>();
@@ -947,6 +958,11 @@ public class MainState : ScreenBase {
 
 		if (_eliminateStats.comboByLastMove > 1) {
 			_combo = _eliminateStats.comboByLastMove - 1;
+			if (_combo > _gameRecord.maxCombo) {
+				_gameRecord.maxCombo = _combo;
+				updateGameRecord();
+			}
+
 			invalidUI();
 		}
 
@@ -1257,6 +1273,8 @@ public class MainState : ScreenBase {
 		_gameMode = (parameters != null && parameters.Contains("gameMode")) ? 
 			(GameMode)parameters["gameMode"] : GameMode.AI;
 		_turn = Side.Opposite;
+
+		_gameRecord.highScore = PlayerPrefs.GetInt("high_score", 0);
 
 		resetEliminateStats(_turn);
 		pause(false);
