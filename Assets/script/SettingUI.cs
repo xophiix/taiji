@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class SettingUI : ScreenBase {
 
@@ -24,7 +25,8 @@ public class SettingUI : ScreenBase {
 	}
 
 	public void onToggleSound() {
-
+		Toggle soundToggle = gameObject.transform.Find("ContentLayer/SettingLayer/ToggleSound").GetComponent<Toggle>();
+		AudioListener.volume = soundToggle.isOn ? 1.0f : 0.0f;
 	}
 
 	public void onToggleMusic() {
