@@ -25,6 +25,8 @@ public class StartMenu : ScreenBase {
 	}
 
 	public void onNewGame() {
+		ScreenManager.show(gameObject, false, "", true);
+
 		Hashtable parameters = new Hashtable();
 
 		MainState.GameMode gameMode = MainState.GameMode.AI;
@@ -33,8 +35,6 @@ public class StartMenu : ScreenBase {
 		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
 		ScreenManager.show(gameMainUI, true);
 		gameMainUI.GetComponent<MainState>().restart(parameters);
-
-		ScreenManager.show(gameObject, false);
 	}
 
 	public void onQuit() {
@@ -52,19 +52,19 @@ public class StartMenu : ScreenBase {
 	}
 
 	public void onResume() {
+		ScreenManager.show(gameObject, false, "", true);
 		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
 		ScreenManager.show(gameMainUI, true);
 		gameMainUI.GetComponent<MainState>().pause(false);
-		this.gameObject.SetActive(false);
 	}
 
 	public void onSetting() {
-		ScreenManager.show(gameObject, false);
+		ScreenManager.show(gameObject, false, "SlideOut");
 		ScreenManager.instance().show("SettingUI", true);
 	}
 
 	public void onAchievement() {
-		ScreenManager.show(gameObject, false);
+		ScreenManager.show(gameObject, false, "SlideOut");
 		ScreenManager.instance().show("AchievementUI", true);
 	}
 

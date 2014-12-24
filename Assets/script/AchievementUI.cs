@@ -27,13 +27,23 @@ public class AchievementUI : ScreenBase {
 	}
 
 	public void onBack() {
-		ScreenManager.show(gameObject, false);
 		string screen = fromScreen;
-		if (0 == screen.Length) {
+		if (screen == "") {
 			screen = "StartMenu";
 		}
 
-		ScreenManager.instance().show(screen, true);
+		string closeAnim = "";
+		string openAnim = "";
+		if (screen == "StartMenu") {
+			closeAnim = "SlideOutReverse";
+			openAnim = "SlideInReverse";
+		} else {
+			closeAnim = "ScreenOut";
+			openAnim = "ScreenIn";
+		}
+
+		ScreenManager.show(gameObject, false, closeAnim);
+		ScreenManager.instance().show(screen, true, openAnim);
 	}
 
 	private void initAchieveUI() {

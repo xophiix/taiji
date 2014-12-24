@@ -13,8 +13,7 @@ using UnityEngine.UI;
 
 public class ScreenManager
 {
-	ScreenManager ()
-	{
+	ScreenManager () {
 	}
 
 	private static ScreenManager _instance;
@@ -29,7 +28,6 @@ public class ScreenManager
 
 	public void registerScreen(string name, GameObject screen) {
 		_namedScreens[name] = screen;
-		Debug.Log ("register screen " + name);
 		screen.SetActive(false);
 	}
 
@@ -45,26 +43,29 @@ public class ScreenManager
 		return (GameObject)_namedScreens[name];
 	}
 
-	public GameObject show(string name, bool showOrHide) {
-		Debug.Log ("show screen " + name);
+	public GameObject show(string name, bool showOrHide, string anim = "", bool directly = false) {
 		GameObject screen = (GameObject)_namedScreens[name];
 		if (screen != null) {
-			show(screen, showOrHide);
+			show(screen, showOrHide, anim, directly);
 		}
 
 		return screen;
 	}
 
-	public static void show(GameObject screen, bool showOrHide) {
-		screen.SetActive(showOrHide);
+	public static void show(GameObject screen, bool showOrHide, string anim = "", bool directly = false) {
+		ScreenBase screenBase = screen.GetComponent<ScreenBase>();
 		if (showOrHide) {
-			screen.GetComponent<RectTransform>().localPosition = Vector3.zero;
+			screenBase.open(anim, directly);
+		} else {
+			screenBase.close(anim, directly);
 		}
 
-		ScreenBase screenBase = screen.GetComponent<ScreenBase>();
-		if (screenBase != null) {
-			screenBase.onShow(showOrHide);
-		}
+		screenBase.onShow(showOrHide);
+	}
+
+	public static void change(GameObject src, GameObject dst, string srcAnim = "", string dstAnim = "") {
+		src.gameObject.GetComponent<ScreenBase>().close(srcAnim);
+		dst.gameObject.GetComponent<ScreenBase>().open(dstAnim);
 	}
 
 	private Hashtable _namedScreens = new Hashtable();

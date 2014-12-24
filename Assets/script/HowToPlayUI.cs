@@ -14,7 +14,7 @@ public class HowToPlayUI : ScreenBase {
 	}
 
 	public void onBack() {
-		ScreenManager.show(gameObject, false);
-		ScreenManager.instance().show("SettingUI", true);
+		ScreenManager.show(gameObject, false, "SlideOutReverse");
+		ScreenManager.instance().show("SettingUI", true, "SlideInReverse");
 	}
 }
