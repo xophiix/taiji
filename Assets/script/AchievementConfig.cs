@@ -89,11 +89,12 @@ public class AchievementConfig
 					if (!finishedAchieves.Contains(item.id)) {
 						int progress = PlayerPrefs.GetInt("achieve_progress_" + item.id);
 						progress |= 1 << pawnType;
-						if (progress == 2) {
-							PlayerPrefs.SetInt("achieve_progress_" + item.id, progress);
+						if (progress == 3) {
 							finishedAchieves.Add(item.id);
 							justFinishedAchieveIds.Add(item.id);
 						}
+
+						PlayerPrefs.SetInt("achieve_progress_" + item.id, progress);
 					}
 				}
 			}
