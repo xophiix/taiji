@@ -1208,7 +1208,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: .222022668, g: .219354659, b: .195351154, a: .879999995}
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
     m_FontSize: 20
@@ -4642,7 +4642,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: .222022668, g: .219354659, b: .195351154, a: .879999995}
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
     m_FontSize: 20
@@ -7250,7 +7250,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: .879999995}
+  m_Color: {r: .222022668, g: .219354659, b: .195351154, a: .879999995}
   m_FontData:
     m_Font: {fileID: 12800000, guid: 0641f70606a9a479f94379cb80ae90b9, type: 3}
     m_FontSize: 26
@@ -10353,6 +10353,7 @@ GameObject:
   - 222: {fileID: 1534117146}
   - 114: {fileID: 1534117144}
   - 114: {fileID: 1534117143}
+  - 95: {fileID: 1534117145}
   m_Layer: 0
   m_Name: TitleLayer
   m_TagString: Untagged
@@ -10396,10 +10397,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7303323a1e4f4dacb7eb5dcbcf5e18d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blackScoreColor: {r: .285282761, g: .282448113, b: .25680548, a: 1}
-  whiteScoreColor: {r: .926154435, g: .914014876, b: .835421741, a: .800000012}
+  blackScoreColor: {r: .286274523, g: .282352954, b: .254901975, a: 1}
+  whiteScoreColor: {r: .926154435, g: .914014876, b: .835421741, a: .879999995}
   blackScoreTextColor: {r: .926154435, g: .914014876, b: .835421741, a: .879999995}
-  whiteScoreTextColor: {r: .285282761, g: .282448113, b: .25680548, a: .879999995}
+  whiteScoreTextColor: {r: .222022668, g: .219354659, b: .195351154, a: .879999995}
 --- !u!114 &1534117144
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10412,7 +10413,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: .286274523, g: .282352954, b: .254901975, a: 0}
   m_Sprite: {fileID: 0}
   m_Type: 1
   m_PreserveAspect: 0
@@ -10421,6 +10422,21 @@ MonoBehaviour:
   m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0
+--- !u!95 &1534117145
+Animator:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1534117141}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1acb23de4ba894dbe85c0a6dd344cef6, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 1
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
 --- !u!222 &1534117146
 CanvasRenderer:
   m_ObjectHideFlags: 0
