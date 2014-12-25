@@ -866,7 +866,7 @@ GameObject:
   - 82: {fileID: 112288502}
   m_Layer: 0
   m_Name: Eliminate2
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6537,7 +6537,7 @@ GameObject:
   - 82: {fileID: 914910136}
   m_Layer: 0
   m_Name: GameOver
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -7447,7 +7447,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1031035173
 RectTransform:
   m_ObjectHideFlags: 0
@@ -8163,7 +8163,7 @@ GameObject:
   - 82: {fileID: 1091104295}
   m_Layer: 0
   m_Name: AmbientMusic
-  m_TagString: Untagged
+  m_TagString: BgMusic
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -8176,11 +8176,11 @@ AudioSource:
   m_GameObject: {fileID: 1091104294}
   m_Enabled: 1
   serializedVersion: 3
-  m_audioClip: {fileID: 0}
+  m_audioClip: {fileID: 8300000, guid: 5f513cfc9d8914bac9601ba29fc4efd4, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: .649999976
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Priority: 128
   DopplerLevel: 1
@@ -8504,7 +8504,7 @@ MonoBehaviour:
         m_CallState: 2
     m_TypeName: UnityEngine.UI.Toggle+ToggleEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
-  m_IsOn: 0
+  m_IsOn: 1
 --- !u!1 &1121081832
 GameObject:
   m_ObjectHideFlags: 0
@@ -9729,7 +9729,7 @@ MonoBehaviour:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1361691508}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 77659535657bf4fb5b1ae18b81403018, type: 3}
   m_Name: 
@@ -10976,7 +10976,7 @@ GameObject:
   - 82: {fileID: 1617239281}
   m_Layer: 0
   m_Name: ButtonClick
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -11062,7 +11062,7 @@ GameObject:
   - 82: {fileID: 1621536003}
   m_Layer: 0
   m_Name: NewAchieve
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -12292,7 +12292,7 @@ GameObject:
   - 82: {fileID: 1798194054}
   m_Layer: 0
   m_Name: LevelUp
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -12720,7 +12720,7 @@ GameObject:
   - 82: {fileID: 1873456059}
   m_Layer: 0
   m_Name: Trash
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -14022,7 +14022,7 @@ GameObject:
   - 82: {fileID: 1931528034}
   m_Layer: 0
   m_Name: MoveEnd
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -14169,7 +14169,7 @@ GameObject:
   - 82: {fileID: 1945505076}
   m_Layer: 0
   m_Name: MoveBegin
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -14451,7 +14451,7 @@ GameObject:
   - 82: {fileID: 1976359093}
   m_Layer: 0
   m_Name: Eliminate3
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -14816,7 +14816,7 @@ GameObject:
   - 82: {fileID: 2092891937}
   m_Layer: 0
   m_Name: Eliminate1
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -14902,7 +14902,7 @@ GameObject:
   - 82: {fileID: 2114855335}
   m_Layer: 0
   m_Name: Backwards
-  m_TagString: Untagged
+  m_TagString: SoundFx
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

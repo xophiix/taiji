@@ -9,11 +9,12 @@ public class SoundHub : MonoBehaviour {
 		return _instance;
 	}
 
-	private Dictionary<string, AudioSource> _audioSources = new Dictionary<string, AudioSource>();
+	private Dictionary<string, AudioSource> _soundFxs = new Dictionary<string, AudioSource>();
+	private Dictionary<string, AudioSource> _musics = new Dictionary<string, AudioSource>();
 
 	public void play(string name) {
-		if (_audioSources.ContainsKey(name)) {
-			AudioSource audio = _audioSources[name];
+		if (_soundFxs.ContainsKey(name)) {
+			AudioSource audio = _soundFxs[name];
 			if (audio) {
 				audio.Play();
 			}
@@ -26,7 +27,24 @@ public class SoundHub : MonoBehaviour {
 
 		for (int i = 0; i < transform.childCount; ++i) {
 			Transform child = transform.GetChild(i);
-			_audioSources[child.gameObject.name] = child.audio;
+			_soundFxs[child.gameObject.name] = child.audio;
+		}
+
+		GameObject[] bgMusics = GameObject.FindGameObjectsWithTag("BgMusic");
+		foreach (GameObject bgMusic in bgMusics) {
+			_musics[bgMusic.name] = bgMusic.audio;
+		}
+	}
+
+	public void muteSound(bool mute) {
+		foreach (KeyValuePair<string, AudioSource> kvp in _soundFxs) {
+			kvp.Value.mute = mute;
+		}
+	}
+
+	public void muteMusic(bool mute) {
+		foreach (KeyValuePair<string, AudioSource> kvp in _musics) {
+			kvp.Value.mute = mute;
 		}
 	}
 }

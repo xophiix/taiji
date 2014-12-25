@@ -25,12 +25,13 @@ public class SettingUI : ScreenBase {
 	}
 
 	public void onToggleSound() {
-		Toggle soundToggle = gameObject.transform.Find("ContentLayer/SettingLayer/ToggleSound").GetComponent<Toggle>();
-		AudioListener.volume = soundToggle.isOn ? 1.0f : 0.0f;
+		Toggle toggle = gameObject.transform.Find("ContentLayer/SettingLayer/ToggleSound").GetComponent<Toggle>();
+		SoundHub.instance().muteSound(!toggle.isOn);
 	}
 
 	public void onToggleMusic() {
-		
+		Toggle toggle = gameObject.transform.Find("ContentLayer/SettingLayer/ToggleMusic").GetComponent<Toggle>();
+		SoundHub.instance().muteMusic(!toggle.isOn);
 	}
 
 	public void onSignInGoogle() {
