@@ -50,6 +50,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 172f8f20df3e543c2bea7d76a5ff3644, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  PawnPrefab: {fileID: 100002, guid: 9b1e09e876bb14ca8bd50f0597e8bb8f, type: 2}
 --- !u!222 &22200000
 CanvasRenderer:
   m_ObjectHideFlags: 1

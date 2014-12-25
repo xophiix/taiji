@@ -564,6 +564,7 @@ GameObject:
   - 224: {fileID: 81024345}
   - 222: {fileID: 81024347}
   - 114: {fileID: 81024346}
+  - 114: {fileID: 81024348}
   m_Layer: 0
   m_Name: ChessBoard
   m_TagString: Untagged
@@ -584,10 +585,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 287842853}
   m_RootOrder: 3
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 4, y: -958.5}
-  m_SizeDelta: {x: 632, y: 637}
+  m_AnchorMin: {x: 0, y: .665000021}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -636}
+  m_SizeDelta: {x: 0, y: 314}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &81024346
 MonoBehaviour:
@@ -602,8 +603,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Sprite: {fileID: 21300000, guid: 0443c554bd56244c7b36a717d31ff8b9, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: .0900000036}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -618,6 +619,21 @@ CanvasRenderer:
     type: 2}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 81024344}
+--- !u!114 &81024348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 81024344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8481151d1f85a41c1aef3d066152e0fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GridWidth: 7
+  GridHeight: 7
+  Span: {x: 4, y: 4}
+  gridPrefab: {fileID: 100000, guid: 310ed8d7f4d0a475e909ad5bdf2314b3, type: 2}
 --- !u!1 &99124244
 GameObject:
   m_ObjectHideFlags: 0
@@ -2933,8 +2949,6 @@ MonoBehaviour:
   closeAnim: 
   normalState: 
   PawnPrefab: {fileID: 100002, guid: 9b1e09e876bb14ca8bd50f0597e8bb8f, type: 2}
-  BoardWidth: 8
-  BoardHeight: 8
   InitNextPawnCount: 3
   MaxNextPawnCount: 6
   _gameState: 0

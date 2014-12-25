@@ -7,8 +7,6 @@ public class MainState : ScreenBase {
 	public GameObject PawnPrefab;
 
 	// constants
-	public int BoardWidth = 8;
-	public int BoardHeight = 8;
 	public int InitNextPawnCount = 3;
 	public int MaxNextPawnCount = 6;
 
@@ -56,7 +54,7 @@ public class MainState : ScreenBase {
 	private int _level = 1;
 	private int _combo;
 	private int _newPawnCount;
-	private int _trashChance; 			// chance to cancel opposite's last pawn
+	private int _trashChance; 			// chance to destroy a pawn on board
 	private int _backwardsChance; 		// chance to cancel opposite's last pawn
 	private int _lastUsedBackwardsLock;
 	private Pawn _selectingPawn;
@@ -72,7 +70,7 @@ public class MainState : ScreenBase {
 
 			this.type = type;
 			this.side = side;
-			this.gridIndex = container.gridPosToIndex(gridX, gridY);
+			this.gridIndex = container._chessBoard.gridPosToIndex(gridX, gridY);
 			this.neighborOppositeCount = container.getNeighborOppoCount(type, _gridPos);
 
 			_container._pawns.Add(this);
@@ -129,7 +127,7 @@ public class MainState : ScreenBase {
 
 				if (_gridIndex >= 0) {
 					_container._grids[_gridIndex] = this;
-					_gridPos = _container.gridIndexToPos(value);
+					_gridPos = _container._chessBoard.gridIndexToPos(value);
 					posUpdated();
 				}
 			}
@@ -143,7 +141,7 @@ public class MainState : ScreenBase {
 					_container._grids[_gridIndex] = null;
 				}
 
-				_gridIndex = _container.gridPosToIndex(_gridPos);
+				_gridIndex = _container._chessBoard.gridPosToIndex(_gridPos);
 
 				if (_gridIndex >= 0) {
 					_container._grids[_gridIndex] = this;
@@ -154,7 +152,7 @@ public class MainState : ScreenBase {
 
 		private void posUpdated() {
 			if (_obj != null) {
-				Vector2 posInChessBoard = _container.convertIndexToPosInBoard((int)_gridPos.x, (int)_gridPos.y);
+				Vector2 posInChessBoard = _container._chessBoard.convertIndexToPosInBoard((int)_gridPos.x, (int)_gridPos.y);
 				_obj.transform.localPosition = new Vector3(posInChessBoard.x, posInChessBoard.y, 0);
 			}
 		}
@@ -213,13 +211,7 @@ public class MainState : ScreenBase {
 	private ArrayList _pawns = new ArrayList();
 	private ArrayList _pawnListToEliminate = new ArrayList();
 	private Pawn[] _grids;
-
-	class BoardLayout {
-		public Vector2 size = new Vector2();
-		public Vector2 gridSize = new Vector2();
-	};
-
-	private BoardLayout _boardLayout = new BoardLayout();
+	
 	private GameRecord _gameRecord = new GameRecord();
 
 	private void updateGameRecord() {
@@ -229,7 +221,7 @@ public class MainState : ScreenBase {
 	}
 
 	// ui
-	private Image _chessBoard;
+	private ChessBoard _chessBoard;
 	private Text _scoreText;
 	private Text _comboText;
 	private Image _nextPawnImage;
@@ -246,6 +238,7 @@ public class MainState : ScreenBase {
 	
 	void Awake() {
 		base.Awake();
+
 		preInit();
 	}
 
@@ -320,7 +313,7 @@ public class MainState : ScreenBase {
 			}
 
 			if (gridIndex >= 0) {
-				Vector2 gridPos = gridIndexToPos(gridIndex);
+				Vector2 gridPos = _chessBoard.gridIndexToPos(gridIndex);
 				_gridIndiceForNextPawns.Add(gridPos);
 				indiceToPutNextPawns.Add(gridIndex);
 				++i;
@@ -337,7 +330,7 @@ public class MainState : ScreenBase {
 		List<Vector3> positions = new List<Vector3>();
 		for (int i = 0; i < _gridIndiceForNextPawns.Count; ++i) {
 			Vector2 gridPos = _gridIndiceForNextPawns[i];
-			positions.Add(convertIndexToWorldPos((int)gridPos.x, (int)gridPos.y));
+			positions.Add(_chessBoard.convertIndexToWorldPos((int)gridPos.x, (int)gridPos.y));
 		}
 
 		Debug.Log("sendNextPawnsToBoard " + positions.Count);
@@ -391,7 +384,7 @@ public class MainState : ScreenBase {
 
 				if (Input.GetMouseButtonDown(0)) {
 					Vector2 gridIndice;
-					if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
+					if (_chessBoard.getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
 						Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
 						Debug.Log("select grid pos " + gridIndice + ", pawn" + pawn);
 						if (pawn != null) {
@@ -428,14 +421,14 @@ public class MainState : ScreenBase {
 					}
 
 					if (_selectingPawn != null && _selectingPawn.dragging) {
-						Vector3 posInBoard = screenPosToPosInBoard(Input.mousePosition);
+						Vector3 posInBoard = _chessBoard.screenPosToPosInBoard(Input.mousePosition);
 						posInBoard.z = 0;
 						_selectingPawn.setLocalPosition(posInBoard);
 					}
 				} else if (Input.GetMouseButtonUp(0)) {
 					if (_selectingPawn != null && _selectingPawn.dragging) {
 						Vector2 gridIndice;
-						if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
+						if (_chessBoard.getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
 							Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
 							if (pawn != null) {
 								cancelDrag();
@@ -451,7 +444,7 @@ public class MainState : ScreenBase {
 		} else if (_gameState == GameState.SelectingPawnToTrash) {
 			if (Input.GetMouseButtonDown(0)) {
 				Vector2 gridIndice;
-				if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
+				if (_chessBoard.getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
 					Pawn pawn = getPawnAtPos((int)gridIndice.x, (int)gridIndice.y);
 					if (pawn != null) {
 						if (_selectingPawn == pawn) {
@@ -481,14 +474,14 @@ public class MainState : ScreenBase {
 				}
 				
 				if (_selectingPawn != null && _selectingPawn.dragging) {
-					Vector3 posInBoard = screenPosToPosInBoard(Input.mousePosition);
+					Vector3 posInBoard = _chessBoard.screenPosToPosInBoard(Input.mousePosition);
 					posInBoard.z = 0;
 					_selectingPawn.setLocalPosition(posInBoard);
 				}
 			} else if (Input.GetMouseButtonUp(0)) {
 				if (_selectingPawn != null && _selectingPawn.dragging) {
 					Vector2 gridIndice;
-					if (getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
+					if (_chessBoard.getGridIndexByScreenPosition(Input.mousePosition, out gridIndice)) {
 						cancelDrag();
 					} else {
 						putPawnToTrash();
@@ -549,32 +542,6 @@ public class MainState : ScreenBase {
 			startWaitingOppoSide(_gameMode == GameMode.AI ? 0.3f : 0.0f);
 			_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
 		}
-	}
-
-	private Vector3 screenPosToPosInBoard(Vector3 screenPosition) {
-		Vector3 worldPosition = Camera.main.ScreenToWorldPoint(screenPosition);
-		return _chessBoard.rectTransform.InverseTransformPoint(worldPosition);
-	}
-
-	private bool getGridIndexByScreenPosition(Vector3 screenPosition, out Vector2 gridIndice) {
-		Vector3 worldPosition = Camera.main.ScreenToWorldPoint(screenPosition);
-		Vector3 posInBoard = _chessBoard.rectTransform.InverseTransformPoint(worldPosition);
-
-		gridIndice = new Vector2();
-		float offsetX = posInBoard.x;
-		float offsetY = posInBoard.y;
-		if (offsetX < 0 || offsetY < 0 
-		    || offsetX > _boardLayout.size.x 
-		    || offsetY > _boardLayout.size.y) {
-			return false;
-		}
-		
-		gridIndice.Set(
-			Mathf.FloorToInt(offsetX / _boardLayout.gridSize.x),
-			Mathf.FloorToInt(offsetY / _boardLayout.gridSize.y)
-			);
-		
-		return true;
 	}
 
 	private void prepareNextPawn() {
@@ -711,35 +678,7 @@ public class MainState : ScreenBase {
 		return foundIndex;
 	}
 
-	private Vector2 gridIndexToPos(int index) {
-		int y = index / BoardWidth;
-		int x = index % BoardWidth;
-		return new Vector2(x, y);
-	}
 
-	private int gridPosToIndex(Vector2 gridPos) {
-		return gridPosToIndex((int)gridPos.x, (int)gridPos.y);
-	}
-
-	private int gridPosToIndex(int gridX, int gridY) {
-		if (gridX < 0 || gridX >= BoardWidth || gridY < 0 || gridY >= BoardHeight) {
-			return -1;
-		}
-		
-		return (int)(gridX + gridY * BoardWidth);
-	}
-	
-	private Vector2 convertIndexToPosInBoard(int gridX, int gridY) {
-		return new Vector2(
-			(gridX + 0.5f) * _boardLayout.gridSize.x,
-			(gridY + 0.5f) * _boardLayout.gridSize.y
-		);
-	}
-
-	private Vector3 convertIndexToWorldPos(int gridX, int gridY) {
-		Vector2 posInBoard = convertIndexToPosInBoard(gridX, gridY);
-		return _chessBoard.gameObject.transform.TransformPoint(new Vector3(posInBoard.x, posInBoard.y, 0));
-	}
 
 	private Pawn putPawn(int gridX, int gridY, PawnType type, Side side, bool skipUpdateScene = false) {
 		Pawn pawnAtPos = getPawnAtPos(gridX, gridY);
@@ -780,11 +719,11 @@ public class MainState : ScreenBase {
 	}
 
 	private Pawn getPawnAtPos(int x, int y) {
-		if (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) {
+		int index = _chessBoard.gridPosToIndex(x, y);
+		if (index < 0) {
 			return null;
 		}
 
-		int index = y * BoardWidth + x;
 		return getPawnByGridIndex(index);
 	}
 
@@ -925,7 +864,7 @@ public class MainState : ScreenBase {
 		public bool enableStats;
 
 		public EliminateStats(MainState container) {
-			eliminateRowFlags = new bool[container.BoardHeight];
+			eliminateRowFlags = new bool[container._chessBoard.GridHeight];
 		}
 	};
 
@@ -974,7 +913,7 @@ public class MainState : ScreenBase {
 
 		if (!_eliminateStats.backwardsChanceGained) {
 			// check two row
-			int[] pawnCountOnRow = new int[BoardHeight];
+			int[] pawnCountOnRow = new int[_chessBoard.GridHeight];
 			foreach (Pawn pawn in pawnList) {
 				++pawnCountOnRow[(int)pawn.gridPos.y];
 			}
@@ -1223,20 +1162,22 @@ public class MainState : ScreenBase {
 			}
 		}
 	}
+	
+	void OnDestroy() {
+		_chessBoard.restorePawn(PawnPrefab);
+	}
 
-	private void preInit() {		
+	private void preInit() {	
+		_chessBoard = gameObject.transform.Find("ChessBoard").GetComponent<ChessBoard>();
+		_chessBoard.adjustPawn(PawnPrefab);
+
 		_eliminateStats = new EliminateStats(this);
 	}
 
 	private void init() {
-		_chessBoard = gameObject.transform.Find("ChessBoard").GetComponent<Image>();
-		_boardLayout.size = _chessBoard.rectTransform.rect.size;
-		_boardLayout.gridSize.x = _boardLayout.size.x / BoardWidth;
-		_boardLayout.gridSize.y = _boardLayout.size.y / BoardHeight;
-
-		int gridSize = BoardWidth * BoardHeight;
-		_grids = new Pawn[gridSize];
-		_gridFlags = new GridFlag[2, gridSize];
+		int gridCount = _chessBoard.gridCount;
+		_grids = new Pawn[gridCount];
+		_gridFlags = new GridFlag[2, gridCount];
 
 		_lastPutPawns[(int)Side.Self] = new ArrayList();
 		_lastPutPawns[(int)Side.Opposite] = new ArrayList();
@@ -1284,6 +1225,9 @@ public class MainState : ScreenBase {
 	}
 
 	private void initTraverseIndice() {
+		int BoardWidth = _chessBoard.GridWidth;
+		int BoardHeight = _chessBoard.GridHeight;
+
 		int[][] indice = new int[BoardHeight][];
 		_traverseIndice[(int)TraverType.Horizon] = indice;
 		for (int row = 0; row < BoardHeight; ++row) {

@@ -2,6 +2,8 @@
 using System.Collections;
 
 public class NextPawnController : MonoBehaviour {
+	public GameObject PawnPrefab;
+
 	Vector3 _destMovePos = new Vector3();
 	Vector3 _startPos = new Vector3();
 	Vector3 _movDir;
@@ -9,6 +11,12 @@ public class NextPawnController : MonoBehaviour {
 	float _speed;
 	float _accl = 50f;
 	float _destScale = 1;
+
+	void Awake() {
+		Rect pawnOnBoardRect = PawnPrefab.GetComponent<RectTransform>().rect;
+		Rect thisRect = gameObject.GetComponent<RectTransform>().rect;
+		_destScale = pawnOnBoardRect.width / thisRect.width;
+	}
 
 	// Update is called once per frame
 	void Update () {
@@ -43,7 +51,6 @@ public class NextPawnController : MonoBehaviour {
 		_startPos = gameObject.transform.position;
 		_movDir = destPos - gameObject.transform.position;
 		_movDir.Normalize();
-		_destScale = 100.0f / 44;
 		_destMovePos = destPos;
 		_speed = speed;
 		_reached = false;
