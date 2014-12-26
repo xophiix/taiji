@@ -92,7 +92,8 @@ public class NextPawnBoard : MonoBehaviour {
 	}
 
 	public void sendNextPawnsToBoard(List<Vector3> destPositions) {
-		_movingCount = _pawnImages.Count;
+		gameObject.transform.SetAsLastSibling();
+		_movingCount = Mathf.Min(destPositions.Count, _pawnImages.Count);
 		_destPositions = destPositions;
 		if (_movingCount > 0) {
 			_movingIndex = 0;

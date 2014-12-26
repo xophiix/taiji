@@ -10,7 +10,9 @@ public class NextPawnController : MonoBehaviour {
 	bool _reached = true;
 	float _speed;
 	float _accl = 50f;
+	float _scaleAccl = 1;
 	float _destScale = 1;
+	float _scaleSpeed = 1;
 
 	void Awake() {
 		Rect pawnOnBoardRect = PawnPrefab.GetComponent<RectTransform>().rect;
@@ -29,7 +31,8 @@ public class NextPawnController : MonoBehaviour {
 
 			float scale = gameObject.transform.localScale.x;
 			if (scale < _destScale) {
-				scale += 10.0f * Time.deltaTime;
+				scale += _scaleSpeed * Time.deltaTime;
+				_scaleSpeed += _scaleAccl;
 				gameObject.transform.localScale = new Vector3(scale, scale, 1);
 			} 
 
@@ -54,6 +57,11 @@ public class NextPawnController : MonoBehaviour {
 		_destMovePos = destPos;
 		_speed = speed;
 		_reached = false;
+
+		float estimateTime = Vector3.Distance(_destMovePos, _startPos) / speed;
+		float curScale = gameObject.transform.localScale.x;
+		_scaleSpeed = (_destScale - curScale) / estimateTime;
+		_scaleAccl = _scaleSpeed * _accl / _speed;
 
 		SoundHub.instance().play("MoveBegin");
 	}

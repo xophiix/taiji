@@ -281,13 +281,12 @@ public class MainState : ScreenBase {
 			prepareNextPawn();
 			_turn = Side.Self;
 		}
+
+		_chessBoard.transform.SetAsLastSibling();
 	}
 
 	void onNextPawnSentToBoard() {
 		++_pawnCountOnBoardBeforePut;
-		if (_pawnCountOnBoardBeforePut >= _grids.Length) {
-			gameOver();
-		}
 	}
 
 	void performAIMove() {
@@ -317,13 +316,15 @@ public class MainState : ScreenBase {
 				_gridIndiceForNextPawns.Add(gridPos);
 				indiceToPutNextPawns.Add(gridIndex);
 				++i;
+			} else {
+				break;
 			}
 		}
 
-		/*int[] testGridIndice = new int[]{0, 1, 2, 8, 16, 25, 34};
+		/*int[] testGridIndice = new int[]{0, 1, 2, 8, 9, 10};
 		_gridIndiceForNextPawns.Clear();
 		for (int i = 0; i < testGridIndice.Length; ++i) {
-			Vector2 gridPos = gridIndexToPos(testGridIndice[i]);
+			Vector2 gridPos = _chessBoard.gridIndexToPos(testGridIndice[i]);
 			_gridIndiceForNextPawns.Add(gridPos);
 		}*/
 
@@ -379,6 +380,9 @@ public class MainState : ScreenBase {
 			if (waitInput) {
 				if (_pawns.Count == 0) {
 					_turn = Side.Opposite;
+					return;
+				} else if (_pawns.Count >= _grids.Length) {
+					gameOver();
 					return;
 				}
 
@@ -465,7 +469,7 @@ public class MainState : ScreenBase {
 							SoundHub.instance().play("MoveBegin");
 						}
 					}
-				} else {
+				} else if (_selectingPawn != null) {
 					putPawnToTrash();
 				}
 			} else if (Input.GetMouseButton(0)) {
@@ -494,7 +498,7 @@ public class MainState : ScreenBase {
 	}
 
 	private void putPawnToTrash() {
-		if (_selectingPawn == null || _trashChance <= 0) {
+		if (_gameState != GameState.SelectingPawnToTrash || _selectingPawn == null || _trashChance <= 0) {
 			_gameState = GameState.WaitingPutPawn;
 			return;
 		}
@@ -505,6 +509,8 @@ public class MainState : ScreenBase {
 		_selectingPawn.selected = false;
 		_selectingPawn.destroy(true, "eliminate");
 		_selectingPawn = null;
+
+		_trashButton.animator.ResetTrigger("EnterTrash");
 		_trashButton.animator.SetTrigger("Normal");
 		updateScenePawnState(true);
 	}
@@ -532,6 +538,7 @@ public class MainState : ScreenBase {
 			
 			updateScenePawnState(true);
 			_selectingPawn = null;
+			_gameRecord.turns++;
 			
 			if (_turn == Side.Self) {
 				if (_lastUsedBackwardsLock > 0) {
@@ -552,7 +559,7 @@ public class MainState : ScreenBase {
 		}
 
 		/*_nextPawnTypes.Clear();
-		for (int i = 0; i < 7; ++i) {
+		for (int i = 0; i < 6; ++i) {
 			_nextPawnTypes.Add(PawnType.Black);
 		}*/
 
@@ -625,6 +632,13 @@ public class MainState : ScreenBase {
 
 	// select and drop a self pawn 
 	public void onBtnTrash() {
+		if (_gameState == GameState.SelectingPawnToTrash) {
+			_gameState = GameState.WaitingPutPawn;
+			_trashButton.animator.ResetTrigger("EnterTrash");
+			_trashButton.animator.SetTrigger("Normal");
+			return;
+		}
+
 		if (_gameState != GameState.WaitingPutPawn 
 		    || _turn != Side.Self
 		    || _trashChance <= 0) {
@@ -632,6 +646,7 @@ public class MainState : ScreenBase {
 		}
 
 		_gameState = GameState.SelectingPawnToTrash;
+		_trashButton.animator.ResetTrigger("Normal");
 		_trashButton.animator.SetTrigger("EnterTrash");
 	}
 
@@ -677,8 +692,6 @@ public class MainState : ScreenBase {
 
 		return foundIndex;
 	}
-
-
 
 	private Pawn putPawn(int gridX, int gridY, PawnType type, Side side, bool skipUpdateScene = false) {
 		Pawn pawnAtPos = getPawnAtPos(gridX, gridY);
@@ -736,7 +749,7 @@ public class MainState : ScreenBase {
 	}
 
 	private int calculateScore(ArrayList adjacentPawnList, int combo) {
-		// score = 2 ^ maxNeighborCount * 2 ^ (N - 3);
+		// score = 2 ^ (maxNeighborCount + 1) * 2 ^ (N - 3) * 2 ^ combo;
 		bool[] typeFlag = new bool[9];
 		int typeCount = 0;
 		int maxNeighborCount = 0;
@@ -765,26 +778,32 @@ public class MainState : ScreenBase {
 		return addedScore;
 	}
 
-	private void modifyExp(int exp) {
+	private void modifyExp(int exp, bool noReward = false) {
 		_exp += exp;
 		if (_exp >= _expNextLevel) {
 			_exp -= _expNextLevel;
 			_level++;
-			onLevelUp();
+			onLevelUp(noReward);
 		}
 
 		invalidUI();
 	}
 
-	private void onLevelUp() {
+	private void levelUpDirectly(bool noReward = false) {
+		modifyExp(_expNextLevel - _exp, noReward);
+	}
+
+	private void onLevelUp(bool noReward = false) {
 		SoundHub.instance().play("LevelUp");
 
 		if (_newPawnCount < MaxNextPawnCount) {
 			++_newPawnCount;
 		}
 
-		_trashChance++;
-		_backwardsChance++;
+		if (noReward) {
+			_trashChance++;
+			_backwardsChance++;
+		}
 
 		invalidUI();
 	}
@@ -810,6 +829,7 @@ public class MainState : ScreenBase {
 			AchievementConfig.Condition.CLEAR_BY_TYPE, parameters, GameInit.instance().finishedAchieves);
 
 		if (newlyFinishedAchieves.Count > 0) {
+			Debug.Log("newlyFinishedAchieves " + newlyFinishedAchieves);
 			_newlyFinishedAchieves.AddRange(newlyFinishedAchieves);
 			GameInit.instance().saveAchieveChange();
 		}
@@ -868,16 +888,16 @@ public class MainState : ScreenBase {
 		}
 	};
 
-	public int TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE = 4;
-	public int BACKWARDS_GAIN_ELIMINATE_ROW_PER_MOVE = 2;
+	public int BACKWARDS_GAIN_ELIMINATE_PAWN_PER_MOVE = 4;
+	public int TRASH_GAIN_ELIMINATE_ROW_PER_MOVE = 2;
 
 	EliminateStats _eliminateStats;
 
-	private void resetEliminateStats(Side turn) {
+	private void resetEliminateStats() {
 		_combo = 0;
 		invalidUI();
 
-		_eliminateStats.enableStats = turn == Side.Self;
+		_eliminateStats.enableStats = true;
 		_eliminateStats.continuousEliminatePawnCount = 0;
 		_eliminateStats.comboByLastMove = 0;
 		_eliminateStats.trashChanceGained = false;
@@ -905,13 +925,13 @@ public class MainState : ScreenBase {
 			invalidUI();
 		}
 
-		if (!_eliminateStats.trashChanceGained && _eliminateStats.continuousEliminatePawnCount >= TRASH_GAIN_ELIMINATE_PAWN_PER_MOVE) {
-			++_trashChance;
+		if (pawnList.Count >= BACKWARDS_GAIN_ELIMINATE_PAWN_PER_MOVE) {
+			++_backwardsChance;
+			levelUpDirectly(true);
 			invalidUI();
-			_eliminateStats.trashChanceGained = true;
 		}
 
-		if (!_eliminateStats.backwardsChanceGained) {
+		if (!_eliminateStats.trashChanceGained) {
 			// check two row
 			int[] pawnCountOnRow = new int[_chessBoard.GridHeight];
 			foreach (Pawn pawn in pawnList) {
@@ -919,7 +939,7 @@ public class MainState : ScreenBase {
 			}
 
 			for (int row = 0; row < pawnCountOnRow.Length; ++row) {
-				if (pawnCountOnRow[row] >= 3) {
+				if (pawnCountOnRow[row] >= ADJACENT_COUNT_TO_ELIMINATE) {
 					_eliminateStats.eliminateRowFlags[row] = true;
 				}
 			}
@@ -931,10 +951,11 @@ public class MainState : ScreenBase {
 				}
 			}
 
-			if (eliminateRowCount >= BACKWARDS_GAIN_ELIMINATE_ROW_PER_MOVE) {
-				++_backwardsChance;
+			if (eliminateRowCount >= TRASH_GAIN_ELIMINATE_ROW_PER_MOVE) {
+				++_trashChance;
+				levelUpDirectly(true);
 				invalidUI();
-				_eliminateStats.backwardsChanceGained = true;
+				_eliminateStats.trashChanceGained = true;
 			}
 		}
 	}
@@ -962,6 +983,7 @@ public class MainState : ScreenBase {
 			}
 			
 			_gameState = GameState.WaitingPutPawn;
+			resetEliminateStats();
 			invalidUI();
 		}
 	}
@@ -981,7 +1003,7 @@ public class MainState : ScreenBase {
 
 		if (triggerByUser) {
 			_newlyFinishedAchieves.Clear();
-			resetEliminateStats(_turn);
+			resetEliminateStats();
 		}
 
 		if (_updatingPawnCountToWait > 0) {
@@ -1185,7 +1207,7 @@ public class MainState : ScreenBase {
 		_scoreText = gameObject.transform.Find("ScoreLabel/Score").GetComponent<Text>();
 		_comboText = gameObject.transform.Find("ComboLabel/Combo").GetComponent<Text>();
 		_backChanceText = gameObject.transform.Find("TitleLayer/Backwards/Count").GetComponent<Text>();
-		_trashChanceText = gameObject.transform.Find("TitleLayer/Trash/Count").GetComponent<Text>();
+		_trashChanceText = gameObject.transform.Find("TitleLayer/TrashCount").GetComponent<Text>();
 		_backButton = gameObject.transform.Find("TitleLayer/Backwards").GetComponent<Button>();
 		_trashButton = gameObject.transform.Find("TitleLayer/Trash").GetComponent<Button>();
 		_levelText = gameObject.transform.Find("TitleLayer/Level").GetComponent<Text>();
@@ -1206,7 +1228,7 @@ public class MainState : ScreenBase {
 		_pawns.Clear();
 
 		_newPawnCount = InitNextPawnCount;
-		_backwardsChance = 1;
+		_backwardsChance = 0;
 		_trashChance = 0;
 		_score = 0;
 		_combo = 0;
@@ -1217,7 +1239,7 @@ public class MainState : ScreenBase {
 
 		_gameRecord.highScore = PlayerPrefs.GetInt("high_score", 0);
 
-		resetEliminateStats(_turn);
+		resetEliminateStats();
 		pause(false);
 		invalidUI();
 
@@ -1313,7 +1335,7 @@ public class MainState : ScreenBase {
 			_nextPawnStateInvalid = false;
 		}
 
-		updateButtonState(_backButton, _backwardsChance > 0);
+		updateButtonState(_backButton, _backwardsChance > 0 && 0 == _lastUsedBackwardsLock);
 		updateButtonState(_trashButton, _trashChance > 0);
 
 		_backChanceText.text = _backwardsChance.ToString();

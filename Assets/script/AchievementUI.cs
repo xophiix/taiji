@@ -26,6 +26,12 @@ public class AchievementUI : ScreenBase {
 		}
 	}
 
+	public void onTapScreen() {
+		if (fromScreen == "GameMainUI") {
+			onBack();
+		}
+	}
+
 	public void onBack() {
 		string screen = fromScreen;
 		if (screen == "") {
