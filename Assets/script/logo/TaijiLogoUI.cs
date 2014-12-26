@@ -2,6 +2,7 @@
 using System.Collections;
 
 public class TaijiLogoUI : ScreenBase {
+	GameObject _xmasLayer;
 
 	Animator _pawnAnimator;
 	// Use this for initialization
@@ -11,6 +12,9 @@ public class TaijiLogoUI : ScreenBase {
 		GameObject pawnContainer = gameObject.transform.Find("PawnContainer").gameObject;
 		_pawnAnimator = pawnContainer.GetComponent<Animator>();
 		pawnContainer.SetActive(false);
+
+		_xmasLayer = gameObject.transform.Find("Xmas").gameObject;
+		_xmasLayer.SetActive(false);
 	}
 	
 	// Update is called once per frame
@@ -22,6 +26,12 @@ public class TaijiLogoUI : ScreenBase {
 	}
 
 	protected override void onScreenIn() {
+		_xmasLayer.SetActive(true);
+	}
+
+	void XmasDone() {
+		_xmasLayer.SetActive(false);
+
 		_pawnAnimator.gameObject.SetActive(true);
 		_pawnAnimator.SetTrigger("LogoStart");
 		StartCoroutine(checkAnimDone());
