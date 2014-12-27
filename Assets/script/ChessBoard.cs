@@ -37,8 +37,8 @@ public class ChessBoard : MonoBehaviour {
 
 		Rect bounds = gameObject.GetComponent<RectTransform>().rect;
 
-		_standardGridSize.x = (bounds.width - (8 + 1) * Span.x) / 8;
-		_standardGridSize.y = (bounds.height - (8 + 1) * Span.y) / 8;
+		_standardGridSize.x = (bounds.width - (7 + 1) * Span.x) / 7;
+		_standardGridSize.y = (bounds.height - (7 + 1) * Span.y) / 7;
 
 		updateGrids();
 	}

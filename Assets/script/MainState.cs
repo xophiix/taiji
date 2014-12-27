@@ -28,7 +28,8 @@ public class MainState : ScreenBase {
 
 	public enum PawnType {
 		Black,
-		White
+		White,
+		Unknown,
 	};
 	
 	public enum Side {
@@ -235,6 +236,7 @@ public class MainState : ScreenBase {
 	private bool _nextPawnStateInvalid = true;
 	private MainTitleLayer _titleLayer;
 	private NextPawnBoard _nextPawnBoard;
+	private bool _initialUpdateUI = true;
 	
 	void Awake() {
 		base.Awake();
@@ -353,8 +355,9 @@ public class MainState : ScreenBase {
 
 	void Update() {
 		if (_uiInvalid) {
-			updateUI();
+			updateUI(_initialUpdateUI);
 			_uiInvalid = false;
+			_initialUpdateUI = false;
 		}
 
 		if (_paused) {
@@ -829,7 +832,6 @@ public class MainState : ScreenBase {
 			AchievementConfig.Condition.CLEAR_BY_TYPE, parameters, GameInit.instance().finishedAchieves);
 
 		if (newlyFinishedAchieves.Count > 0) {
-			Debug.Log("newlyFinishedAchieves " + newlyFinishedAchieves);
 			_newlyFinishedAchieves.AddRange(newlyFinishedAchieves);
 			GameInit.instance().saveAchieveChange();
 		}
@@ -1235,6 +1237,7 @@ public class MainState : ScreenBase {
 		_gameState = GameState.WaitingPutPawn;
 		_gameMode = (parameters != null && parameters.Contains("gameMode")) ? 
 			(GameMode)parameters["gameMode"] : GameMode.AI;
+
 		_turn = Side.Opposite;
 
 		_gameRecord.highScore = PlayerPrefs.GetInt("high_score", 0);
@@ -1244,6 +1247,11 @@ public class MainState : ScreenBase {
 		invalidUI();
 
 		prepareNextPawn();
+		Invoke("triggerUpdateUI", 0.3f);
+	}
+
+	void triggerUpdateUI() {
+		updateUI(true);
 	}
 
 	private void initTraverseIndice() {
@@ -1326,7 +1334,7 @@ public class MainState : ScreenBase {
 		}
 	}
 
-	private void updateUI() {
+	private void updateUI(bool initial = false) {
 		_scoreText.text = _score.ToString();
 		_comboText.text = _combo.ToString() + " X";
 
@@ -1335,8 +1343,8 @@ public class MainState : ScreenBase {
 			_nextPawnStateInvalid = false;
 		}
 
-		updateButtonState(_backButton, _backwardsChance > 0 && 0 == _lastUsedBackwardsLock);
-		updateButtonState(_trashButton, _trashChance > 0);
+		updateButtonState(_backButton, _backwardsChance > 0 && 0 == _lastUsedBackwardsLock, initial);
+		updateButtonState(_trashButton, _trashChance > 0, initial);
 
 		_backChanceText.text = _backwardsChance.ToString();
 		_trashChanceText.text = _trashChance.ToString();
@@ -1346,13 +1354,25 @@ public class MainState : ScreenBase {
 		_expBar.transform.localScale = new Vector3(expScale, 1, 1);
 	}
 
-	private void updateButtonState(Button button, bool enabled) {
-		bool preEnabled = _backButton.enabled;
-		button.enabled = enabled;
-		if (preEnabled && !button.enabled) {
-			button.animator.SetTrigger("Disabled");
-		} else if (!preEnabled && button.enabled) {
-			button.animator.SetTrigger("Normal");
+	private void updateButtonState(Button button, bool enabled, bool force = false) {
+		if (force) {
+			button.animator.ResetTrigger("Disabled");
+			button.animator.ResetTrigger("Normal");
+			button.enabled = enabled;
+
+			if (!enabled) {
+				button.animator.SetTrigger("Disabled");
+			} else {
+				button.animator.SetTrigger("Normal");
+			}
+		} else {
+			bool preEnabled = _backButton.enabled;
+			button.enabled = enabled;
+			if (preEnabled && !button.enabled) {
+				button.animator.SetTrigger("Disabled");
+			} else if (!preEnabled && button.enabled) {
+				button.animator.SetTrigger("Normal");
+			}
 		}
 	}
 
