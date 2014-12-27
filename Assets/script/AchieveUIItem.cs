@@ -3,13 +3,14 @@ using System.Collections;
 using UnityEngine.UI;
 
 public class AchieveUIItem : MonoBehaviour {
-	private Text _nameLabel;
-	private Toggle _toggle;
+	public Color finishedColor;
+	public Color notFinishedColor;
+	public Color defaultColor;
 
+	private Text _label;
 	// Use this for initialization
 	void Awake() {
-		_nameLabel = gameObject.transform.Find("Label").GetComponent<Text>();
-		_toggle = gameObject.GetComponent<Toggle>();
+		_label = gameObject.GetComponent<Text>();
 	}
 	
 	// Update is called once per frame
@@ -18,7 +19,12 @@ public class AchieveUIItem : MonoBehaviour {
 	}
 
 	public void setAchieve(AchievementConfig.AchieveItem achieveItem, bool finished) {
-		_nameLabel.text = achieveItem.name.ToUpper();
-		_toggle.isOn = finished;
+		_label.text = achieveItem.name.ToUpper();
+		Color textColor = finished ? finishedColor : notFinishedColor;
+		if (achieveItem.initFinished) {
+			textColor = defaultColor;
+		}
+
+		_label.color = textColor;
 	}
 }

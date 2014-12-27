@@ -17,9 +17,9 @@ public class AchieveNotifyUI : ScreenBase {
 		_title = gameObject.transform.Find("Panel/Title").GetComponent<Text>();
 		_achieveIcon = gameObject.transform.Find("Panel/AchieveIcon").GetComponent<Image>();
 	}
-	
-	// Update is called once per frame
+
 	void Update () {
+
 	}
 
 	public override void onShow(bool show) {

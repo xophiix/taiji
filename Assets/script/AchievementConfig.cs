@@ -39,6 +39,9 @@ public class AchievementConfig
 			_achieveItemList.Add(achieveItem);
 		}
 
+		_achieveItems[7].initFinished = true;
+		_achieveItems[8].initFinished = true;
+
 		foreach (AchieveItem achieveItem in _achieveItemList) {
 			if (_achieveGroupByConditon[achieveItem.condition] == null) {
 				_achieveGroupByConditon[achieveItem.condition] = new ArrayList();
@@ -54,10 +57,11 @@ public class AchievementConfig
 		public string name;
 		public Condition condition;
 		public int[] parameters;
+		public bool initFinished;
 	}
 
 	private List<AchieveItem> _achieveItemList = new List<AchieveItem>();
-	private Hashtable _achieveItems = new Hashtable();
+	private Dictionary<int, AchieveItem> _achieveItems = new Dictionary<int, AchieveItem>();
 	private Hashtable _achieveGroupByConditon = new Hashtable();
 
 	private static AchievementConfig _instance;
@@ -104,7 +108,7 @@ public class AchievementConfig
 	}
 
 	public AchieveItem getAchieveConfigItem(int id) {
-		return (AchieveItem)_achieveItems[id];
+		return _achieveItems[id];
 	}
 
 	public int getAchieveItemCount() {
