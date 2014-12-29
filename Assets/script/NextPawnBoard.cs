@@ -61,6 +61,7 @@ public class NextPawnBoard : MonoBehaviour {
 				int index = _pawnImages.Count;
 				for (int i = 0; i < addCount; ++i, ++index) {
 					GameObject newPawnImage = (GameObject)Instantiate(nextPawnPrefab);
+					newPawnImage.name = "nextPawn" + i;
 					newPawnImage.transform.SetParent(gameObject.transform);
 					_pawnImages.Add(newPawnImage);
 				}

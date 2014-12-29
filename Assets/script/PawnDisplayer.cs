@@ -3,7 +3,6 @@ using System.Collections;
 using UnityEngine.UI;
 
 public class PawnDisplayer : MonoBehaviour {
-	public float rotateAngleSpeed = 0.03f;
 	public float alphaChangeSpeed = 0.03f;
 
 	private Transform _mark;
@@ -16,6 +15,9 @@ public class PawnDisplayer : MonoBehaviour {
 	private float _curMarkAngle = Mathf.PI / 2;
 	private float _destMarkAngle;
 	private bool _markAngleReached = true;
+	private float _curAngleSpeed;
+
+	private int _neighborCount;
 
 	float MARK_DISTANCE;
 	const float MARK_RADIAN_UNIT = Mathf.PI / 4;
@@ -53,7 +55,7 @@ public class PawnDisplayer : MonoBehaviour {
 		StartCoroutine("updateElimateAnim");
 	}
 
-	void FixedUpdate() {
+	void Update() {
 		bool preAlphaReached = _alphaReached;
 		bool preMarkAngleReached = _markAngleReached;
 
@@ -62,13 +64,13 @@ public class PawnDisplayer : MonoBehaviour {
 
 		if (!_markAngleReached) {
 			if (_curMarkAngle < _destMarkAngle) {
-				_curMarkAngle += rotateAngleSpeed;
+				_curMarkAngle += _curAngleSpeed * Time.deltaTime;
 				if (_curMarkAngle > _destMarkAngle) {
 					_curMarkAngle = _destMarkAngle;
 				}
 				angleChanged = true;
 			} else if (_curMarkAngle > _destMarkAngle) {
-				_curMarkAngle -= rotateAngleSpeed;
+				_curMarkAngle -= _curAngleSpeed * Time.deltaTime;
 				if (_curMarkAngle < _destMarkAngle) {
 					_curMarkAngle = _destMarkAngle;
 				}
@@ -115,7 +117,7 @@ public class PawnDisplayer : MonoBehaviour {
 		}
 
 		if ((!preAlphaReached || !preMarkAngleReached) && _alphaReached && _markAngleReached) {
-			gameObject.SendMessageUpwards("onPawnNeighborMarkUpdateDone");
+			gameObject.SendMessageUpwards("onPawnNeighborMarkUpdateDone", this);
 		}
 	}
 
@@ -131,9 +133,18 @@ public class PawnDisplayer : MonoBehaviour {
 	}
 
 	public void setNeighborCountMark(int neighborCount) {
+		if (_neighborCount == neighborCount) {
+			return;
+		}
+
+		_neighborCount = neighborCount;
 		_destAlpha = neighborCount > 0 ? 1.0f : 0.0f;
 		if (neighborCount > 0) {
 			_destMarkAngle = Mathf.PI / 2 - MARK_RADIAN_UNIT * (neighborCount - 1);
+		}
+
+		if (_destMarkAngle != _curMarkAngle) {
+			_curAngleSpeed = Mathf.Abs(_destMarkAngle - _curMarkAngle) / 0.6f;
 		}
 
 		_alphaReached = _curAlpha == _destAlpha;

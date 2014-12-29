@@ -61,6 +61,7 @@ public class MainState : ScreenBase {
 	private Pawn _selectingPawn;
 	private Pawn _selectingPawnToTrash;
 	private float _selectTimeStamp;
+	private bool _comboUpdatedThisTurn;
 
 	class Pawn {
 		public Pawn(PawnType type, int gridX, int gridY, Side side, MainState container) {
@@ -68,11 +69,11 @@ public class MainState : ScreenBase {
 			_obj = (GameObject)Instantiate(container.PawnPrefab, Vector3.zero, Quaternion.identity);
 			_obj.transform.SetParent(container._chessBoard.transform, true);
 			_obj.transform.localScale = Vector3.one;
+			_obj.name = "pawn[" + gridY + "][" + gridX + "]";
 
 			this.type = type;
 			this.side = side;
 			this.gridIndex = container._chessBoard.gridPosToIndex(gridX, gridY);
-			this.neighborOppositeCount = container.getNeighborOppoCount(type, _gridPos);
 
 			_container._pawns.Add(this);
 		}
@@ -276,19 +277,37 @@ public class MainState : ScreenBase {
 			}
 		}
 
-		updateScenePawnState();
-
-		if (_gameState != GameState.GameOver) {
-			_gameState = GameState.WaitingPutPawn;
-			prepareNextPawn();
-			_turn = Side.Self;
-		}
-
 		_chessBoard.transform.SetAsLastSibling();
+		prepareNextPawn();
+		switchTurn();
+		invalidUI();
+
+		updateScenePawnState(true);
 	}
 
 	void onNextPawnSentToBoard() {
 		++_pawnCountOnBoardBeforePut;
+	}
+
+	void stepBegin() {
+		//Debug.Log ("step begin: combo=" + _combo + " state " + _gameState + " turn=" + _turn + " step=" + _gameRecord.turns);
+		if (!_comboUpdatedThisTurn) {
+			_combo = 0;
+		}
+
+		_comboUpdatedThisTurn = false;
+		resetEliminateStats();
+		invalidUI();
+	}
+
+	void stepEnd() {
+		_gameRecord.turns++;
+		switchTurn();
+		//Debug.Log ("step end: combo=" + _combo + " state " + _gameState + " turn=" + _turn + " step=" + _gameRecord.turns);
+	}
+
+	void switchTurn() {		
+		_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
 	}
 
 	void performAIMove() {
@@ -371,6 +390,7 @@ public class MainState : ScreenBase {
 					return;
 				}
 
+				stepBegin();
 				if (_gameMode == GameMode.AI) {
 					performAIMove();
 				} else if (_gameMode == GameMode.Self){
@@ -382,7 +402,7 @@ public class MainState : ScreenBase {
 
 			if (waitInput) {
 				if (_pawns.Count == 0) {
-					_turn = Side.Opposite;
+					stepEnd();
 					return;
 				} else if (_pawns.Count >= _grids.Length) {
 					gameOver();
@@ -541,16 +561,15 @@ public class MainState : ScreenBase {
 			
 			updateScenePawnState(true);
 			_selectingPawn = null;
-			_gameRecord.turns++;
-			
+
 			if (_turn == Side.Self) {
 				if (_lastUsedBackwardsLock > 0) {
 					--_lastUsedBackwardsLock;
 				}
 			}
-			
+
+			stepEnd();
 			startWaitingOppoSide(_gameMode == GameMode.AI ? 0.3f : 0.0f);
-			_turn = _turn == Side.Self ? Side.Opposite : Side.Self;
 		}
 	}
 
@@ -876,8 +895,8 @@ public class MainState : ScreenBase {
 			}
 		}
 	}
-
-	class EliminateStats {
+	
+	public class EliminateStats {
 		public int continuousEliminatePawnCount;
 		public int comboByLastMove;
 		public bool trashChanceGained;
@@ -896,7 +915,6 @@ public class MainState : ScreenBase {
 	EliminateStats _eliminateStats;
 
 	private void resetEliminateStats() {
-		_combo = 0;
 		invalidUI();
 
 		_eliminateStats.enableStats = true;
@@ -917,15 +935,16 @@ public class MainState : ScreenBase {
 		++_eliminateStats.comboByLastMove;
 		_eliminateStats.continuousEliminatePawnCount += pawnList.Count;
 
-		if (_eliminateStats.comboByLastMove > 1) {
-			_combo = _eliminateStats.comboByLastMove - 1;
+		if (!_comboUpdatedThisTurn) {
+			++_combo;
+			_comboUpdatedThisTurn = true;
+
 			if (_combo > _gameRecord.maxCombo) {
 				_gameRecord.maxCombo = _combo;
-				updateGameRecord();
 			}
-
-			invalidUI();
 		}
+
+		invalidUI();
 
 		if (pawnList.Count >= BACKWARDS_GAIN_ELIMINATE_PAWN_PER_MOVE) {
 			++_backwardsChance;
@@ -964,7 +983,7 @@ public class MainState : ScreenBase {
 
 	private int _updatingPawnCountToWait;
 
-	private void onPawnNeighborMarkUpdateDone() {
+	private void onPawnNeighborMarkUpdateDone(PawnDisplayer pawn) {
 		--_updatingPawnCountToWait;
 		if (_updatingPawnCountToWait <= 0) {
 			collectAndEliminateAdjacentPawns();
@@ -983,10 +1002,8 @@ public class MainState : ScreenBase {
 				notifyAchieveGet(_newlyFinishedAchieves);
 				_newlyFinishedAchieves.Clear();
 			}
-			
+						
 			_gameState = GameState.WaitingPutPawn;
-			resetEliminateStats();
-			invalidUI();
 		}
 	}
 
@@ -994,18 +1011,19 @@ public class MainState : ScreenBase {
 		// traverse the map
 		_gameState = GameState.UpdatingPawnState;
 
-		_updatingPawnCountToWait = 0;
-		foreach (Pawn pawn in _pawns) {
-			int preNeighborOppositeCount = pawn.neighborOppositeCount;
-			pawn.neighborOppositeCount = getNeighborOppoCount(pawn.type, pawn.gridPos);
-			if (preNeighborOppositeCount != pawn.neighborOppositeCount) {
-				++_updatingPawnCountToWait;
-			}
-		}
-
 		if (triggerByUser) {
 			_newlyFinishedAchieves.Clear();
 			resetEliminateStats();
+		}
+
+		foreach (Pawn pawn in _pawns) {
+			int preNeighborOppositeCount = pawn.neighborOppositeCount;
+			int newNeighborOppositeCount = getNeighborOppoCount(pawn.type, pawn.gridPos);
+			if (newNeighborOppositeCount != preNeighborOppositeCount) {
+				++_updatingPawnCountToWait;
+			}
+
+			pawn.neighborOppositeCount = newNeighborOppositeCount;
 		}
 
 		if (_updatingPawnCountToWait > 0) {
