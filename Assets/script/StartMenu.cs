@@ -21,7 +21,6 @@ public class StartMenu : ScreenBase {
 
 	// Update is called once per frame
 	void Update () {
-
 	}
 
 	public void onNewGame() {

@@ -526,7 +526,7 @@ public class MainState : ScreenBase {
 			return;
 		}
 
-		--_trashChance;
+		modifyTrashChance(-1);
 		SoundHub.instance().play("Trash");
 		invalidUI();
 		_selectingPawn.selected = false;
@@ -640,7 +640,7 @@ public class MainState : ScreenBase {
 
 		if (use) {
 			SoundHub.instance().play("Backwards");
-			--_backwardsChance;
+			modifyBackwardsChance(-1);
 			invalidUI();
 			_lastUsedBackwardsLock = 2;
 		}
@@ -817,14 +817,15 @@ public class MainState : ScreenBase {
 
 	private void onLevelUp(bool noReward = false) {
 		SoundHub.instance().play("LevelUp");
+		FloatTip.instance.addTip("Level up!");
 
 		if (_newPawnCount < MaxNextPawnCount) {
 			++_newPawnCount;
 		}
 
-		if (noReward) {
-			_trashChance++;
-			_backwardsChance++;
+		if (!noReward) {
+			modifyTrashChance(1);
+			modifyBackwardsChance(1);
 		}
 
 		invalidUI();
@@ -840,6 +841,30 @@ public class MainState : ScreenBase {
 		if (_score > _gameRecord.highScore) {
 			_gameRecord.highScore = _score;
 			updateGameRecord();
+		}
+	}
+
+	private void modifyTrashChance(int value) {
+		_trashChance += value;
+		if (_trashChance < 0) {
+			_trashChance = 0;
+		}
+
+		if (_trashChance > 0 && value > 0) {
+			string tip = string.Format("Discard{0}", "+" + value);
+			FloatTip.instance.addTip(tip);
+		}
+	} 
+
+	private void modifyBackwardsChance(int value) {
+		_backwardsChance += value;
+		if (_backwardsChance < 0) {
+			_backwardsChance = 0;
+		}
+		
+		if (_backwardsChance > 0 && value > 0) {
+			string tip = string.Format("Undo{0}", "+" + value);
+			FloatTip.instance.addTip(tip);
 		}
 	}
 
@@ -947,7 +972,7 @@ public class MainState : ScreenBase {
 		invalidUI();
 
 		if (pawnList.Count >= BACKWARDS_GAIN_ELIMINATE_PAWN_PER_MOVE) {
-			++_backwardsChance;
+			modifyBackwardsChance(1);
 			levelUpDirectly(true);
 			invalidUI();
 		}
@@ -973,7 +998,7 @@ public class MainState : ScreenBase {
 			}
 
 			if (eliminateRowCount >= TRASH_GAIN_ELIMINATE_ROW_PER_MOVE) {
-				++_trashChance;
+				modifyTrashChance(1);
 				levelUpDirectly(true);
 				invalidUI();
 				_eliminateStats.trashChanceGained = true;
