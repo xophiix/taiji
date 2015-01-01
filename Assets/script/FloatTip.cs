@@ -81,7 +81,7 @@ public class FloatTip : MonoBehaviour {
 			}
 		}
 
-		Debug.Log("tip alpha " + item.alpha);
+		//Debug.Log("tip alpha " + item.alpha);
 
 		_tipText.text = item.text;
 		Color c = _tipText.color;

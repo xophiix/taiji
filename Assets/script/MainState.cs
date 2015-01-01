@@ -641,7 +641,6 @@ public class MainState : ScreenBase {
 		if (use) {
 			SoundHub.instance().play("Backwards");
 			modifyBackwardsChance(-1);
-			invalidUI();
 			_lastUsedBackwardsLock = 2;
 		}
 	}
@@ -850,6 +849,8 @@ public class MainState : ScreenBase {
 			_trashChance = 0;
 		}
 
+		invalidUI();
+
 		if (_trashChance > 0 && value > 0) {
 			string tip = string.Format("Discard{0}", "+" + value);
 			FloatTip.instance.addTip(tip);
@@ -861,7 +862,9 @@ public class MainState : ScreenBase {
 		if (_backwardsChance < 0) {
 			_backwardsChance = 0;
 		}
-		
+
+		invalidUI();
+
 		if (_backwardsChance > 0 && value > 0) {
 			string tip = string.Format("Undo{0}", "+" + value);
 			FloatTip.instance.addTip(tip);
@@ -1409,8 +1412,11 @@ public class MainState : ScreenBase {
 				button.animator.SetTrigger("Normal");
 			}
 		} else {
-			bool preEnabled = _backButton.enabled;
+			bool preEnabled = button.enabled;
 			button.enabled = enabled;
+			button.animator.ResetTrigger("Disabled");
+			button.animator.ResetTrigger("Normal");
+
 			if (preEnabled && !button.enabled) {
 				button.animator.SetTrigger("Disabled");
 			} else if (!preEnabled && button.enabled) {
