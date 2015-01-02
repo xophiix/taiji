@@ -39,12 +39,12 @@ public class FloatTip : MonoBehaviour {
 	Image _tipContainer;
 	Text _tipText;
 	CanvasGroup _tipContainerCanvas;
+	CanvasGroup _selfCanvasGroup;
 
 	void Awake() {
 		_instance = this;
-		_tipContainerCanvas = gameObject.transform.Find("TipContainer").GetComponent<CanvasGroup>();
-		_tipContainerCanvas.interactable = false;
-		_tipContainerCanvas.blocksRaycasts = false;
+		_selfCanvasGroup = gameObject.GetComponent<CanvasGroup>();
+		_tipContainerCanvas = gameObject.transform.Find("TipContainer").gameObject.GetComponent<CanvasGroup>();
 
 		_tipContainer = gameObject.transform.Find("TipContainer").GetComponent<Image>();
 		_tipText = gameObject.transform.Find("TipContainer/Tip").GetComponent<Text>();
@@ -105,6 +105,8 @@ public class FloatTip : MonoBehaviour {
 		if (!gameObject.activeSelf) {
 			gameObject.SetActive(true);
 			gameObject.transform.SetAsLastSibling();
+			_selfCanvasGroup.blocksRaycasts = false;
+			_selfCanvasGroup.interactable = false;
 
 			StopCoroutine("fadeInContainer");
 			StartCoroutine("fadeInContainer");
