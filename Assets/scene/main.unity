@@ -3789,6 +3789,7 @@ GameObject:
   - 222: {fileID: 396174562}
   - 114: {fileID: 396174561}
   - 114: {fileID: 396174563}
+  - 225: {fileID: 396174564}
   m_Layer: 5
   m_Name: FloatTip
   m_TagString: Untagged
@@ -3855,6 +3856,16 @@ MonoBehaviour:
   fadeInDuration: .400000006
   keepDuration: 1.5
   fadeOutDuration: .400000006
+--- !u!225 &396174564
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 396174559}
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &403137236
 GameObject:
   m_ObjectHideFlags: 0
@@ -8752,7 +8763,7 @@ AudioSource:
   m_GameObject: {fileID: 1091104294}
   m_Enabled: 1
   serializedVersion: 3
-  m_audioClip: {fileID: 8300000, guid: 5f513cfc9d8914bac9601ba29fc4efd4, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 68f8df5f8eb36f544b326316c637d82f, type: 3}
   m_PlayOnAwake: 1
   m_Volume: .649999976
   m_Pitch: 1
