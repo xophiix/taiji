@@ -5269,6 +5269,10 @@ Prefab:
       propertyPath: m_Text
       value: Contact Us
       objectReference: {fileID: 0}
+    - target: {fileID: 11400002, guid: b6c3f68f8e98d4929822940f3187f174, type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: onContactUs
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: b6c3f68f8e98d4929822940f3187f174, type: 2}
   m_RootGameObject: {fileID: 1970390373}
@@ -15083,7 +15087,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2068353215}
-        m_MethodName: 
+        m_MethodName: onContactUs
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
