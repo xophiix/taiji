@@ -6,8 +6,10 @@ public class StartMenu : ScreenBase {
 	private void updateToggleState() {
 		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
 		MainState mainState = gameMainUI.GetComponent<MainState>();
+		bool showResume = mainState != null && mainState.paused();
+
 		Transform resumeButton = gameObject.transform.Find("ButtonLayer/Resume");
-		resumeButton.gameObject.SetActive(mainState.paused());
+		resumeButton.gameObject.SetActive(showResume);
 	}
 
 	// Use this for initialization
@@ -19,7 +21,6 @@ public class StartMenu : ScreenBase {
 		updateToggleState();
 	}
 
-	// Update is called once per frame
 	void Update () {
 	}
 

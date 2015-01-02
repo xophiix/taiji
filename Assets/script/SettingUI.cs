@@ -43,6 +43,6 @@ public class SettingUI : ScreenBase {
 	}
 
 	public void onContactUs() {
-		Debug.Log("onContactUs");
+		PlatformUtils.sendMail("xophiix@gmail.com");
 	}
 }
