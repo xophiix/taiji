@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 
 public class TaijiLogoUI : ScreenBase {
@@ -26,7 +27,13 @@ public class TaijiLogoUI : ScreenBase {
 	}
 
 	protected override void onScreenIn() {
-		_xmasLayer.SetActive(true);
+		System.DateTime date = System.DateTime.Now;
+		if (date.Month == 12 && date.Day >= 24 && date.Day <= 28) {
+			gameObject.GetComponent<Image>().color = new Color32(102, 23, 30, 255);
+			_xmasLayer.SetActive(true);
+		} else {
+			XmasDone();
+		}
 	}
 
 	void XmasDone() {
