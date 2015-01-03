@@ -805,9 +805,10 @@ public class MainState : ScreenBase {
 
 	private void modifyExp(int exp, bool noReward = false) {
 		_exp += exp;
-		if (_exp >= _expNextLevel) {
+		while (_exp >= _expNextLevel) {
 			_exp -= _expNextLevel;
 			_level++;
+			_expNextLevel += 50;
 			onLevelUp(noReward);
 		}
 
