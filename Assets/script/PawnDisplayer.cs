@@ -28,11 +28,16 @@ public class PawnDisplayer : MonoBehaviour {
 	public Sprite blackPawn;
 	public Sprite blackPawnMark;
 
+	public bool disableSendMessage {
+		get; set;
+	}
+
 	void Awake() {
 		_destMarkAngle = _curMarkAngle;
 		_mark = gameObject.transform.Find("Mark");
 		_markImage = _mark.GetComponent<Image>();
-		
+		disableSendMessage = false;
+
 		Color color = _markImage.color;
 		color.a = _curAlpha;
 		_markImage.color = color;
@@ -117,7 +122,9 @@ public class PawnDisplayer : MonoBehaviour {
 		}
 
 		if ((!preAlphaReached || !preMarkAngleReached) && _alphaReached && _markAngleReached) {
-			gameObject.SendMessageUpwards("onPawnNeighborMarkUpdateDone", this);
+			if (!disableSendMessage) {
+				gameObject.SendMessageUpwards("onPawnNeighborMarkUpdateDone", this);
+			}
 		}
 	}
 
@@ -132,8 +139,8 @@ public class PawnDisplayer : MonoBehaviour {
 		Destroy(this.gameObject);
 	}
 
-	public void setNeighborCountMark(int neighborCount) {
-		if (_neighborCount == neighborCount) {
+	public void setNeighborCountMark(int neighborCount, bool force = false) {
+		if (!force && _neighborCount == neighborCount) {
 			return;
 		}
 

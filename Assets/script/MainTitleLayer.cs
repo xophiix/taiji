@@ -30,7 +30,7 @@ public class MainTitleLayer : MonoBehaviour {
 
 		if (type == MainState.PawnType.Black) {
 			_animator.SetTrigger("Black");
-		} else {
+		} else if (type == MainState.PawnType.White) {
 			_animator.SetTrigger("White");
 		}
 	}

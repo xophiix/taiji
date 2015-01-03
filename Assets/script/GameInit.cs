@@ -22,6 +22,23 @@ public class GameInit : MonoBehaviour {
 	void initPlayerDefaults() {
 		if (Application.isEditor) {
 			PlayerPrefs.DeleteAll();
+
+			/*long now = System.DateTime.Now.Ticks;
+			PlayerPrefs.SetString("achieve_finish_time1", now.ToString());
+			PlayerPrefs.SetString("achieve_finish_time2", now.ToString());
+			PlayerPrefs.SetInt("achieve_progress" + 1 + "_pawn_type0", 0);
+			PlayerPrefs.SetInt("achieve_progress" + 1 + "_pawn_type1", 1);
+			PlayerPrefs.SetInt("achieve_progress" + 2 + "_pawn_type0", 1);
+			PlayerPrefs.SetInt("achieve_progress" + 2 + "_pawn_type1", 0);
+			PlayerPrefs.SetInt("achieve_progress" + 1, 3);
+			PlayerPrefs.SetInt("achieve_progress" + 2, 3);
+
+			PlayerPrefs.SetInt("achieve_progress" + 3, 1);
+			PlayerPrefs.SetInt("achieve_progress" + 3 + "_pawn_type0", 0);
+
+			PlayerPrefs.SetInt("finished_achieve_" + 1, 1);
+			PlayerPrefs.SetInt("finished_achieve_" + 2, 1);*/
+
 			PlayerPrefs.Save();
 		}
 

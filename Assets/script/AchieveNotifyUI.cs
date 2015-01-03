@@ -37,7 +37,9 @@ public class AchieveNotifyUI : ScreenBase {
 		if (_displayIndex >= _finishedAchieves.Count) {
 			ScreenManager.show(gameObject, false);
 			ScreenManager.instance().show("AchievementUI", true, "SlideIn");
-			ScreenManager.instance().get("AchievementUI").GetComponent<AchievementUI>().fromScreen = "GameMainUI";
+			AchievementUI achievementUI = ScreenManager.instance().get("AchievementUI").GetComponent<AchievementUI>();
+			achievementUI.fromScreen = "GameMainUI";
+			achievementUI.showAchieveInfo(_finishedAchieves[_finishedAchieves.Count - 1]);
 		}
 	}
 
@@ -53,7 +55,12 @@ public class AchieveNotifyUI : ScreenBase {
 			int achieveId = _finishedAchieves[_displayIndex];
 			AchievementConfig.AchieveItem achieveItem = AchievementConfig.instance().getAchieveConfigItem(achieveId);
 			_title.text = achieveItem.name.ToUpper();
-			// TODO: set icon dynamically
+
+			Texture2D achieveIconTex = Resources.Load<Texture2D>("texture/achievement0" + (achieveId - 1));
+			_achieveIcon.sprite = Sprite.Create(achieveIconTex,
+			                                    new Rect(0, 0, achieveIconTex.width, achieveIconTex.height),
+			                                    new Vector2(0.5f, 0.5f));
+
 			++_displayIndex;
 		}
 	}

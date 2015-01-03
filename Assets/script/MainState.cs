@@ -66,10 +66,11 @@ public class MainState : ScreenBase {
 	class Pawn {
 		public Pawn(PawnType type, int gridX, int gridY, Side side, MainState container) {
 			_container = container;
-			_obj = (GameObject)Instantiate(container.PawnPrefab, Vector3.zero, Quaternion.identity);
-			_obj.transform.SetParent(container._chessBoard.transform, true);
-			_obj.transform.localScale = Vector3.one;
-			_obj.name = "pawn[" + gridY + "][" + gridX + "]";
+			GameObject pawnObj = (GameObject)Instantiate(container.PawnPrefab, Vector3.zero, Quaternion.identity);
+			_obj = pawnObj.GetComponent<PawnDisplayer>();
+			pawnObj.transform.SetParent(container._chessBoard.transform, true);
+			pawnObj.transform.localScale = Vector3.one;
+			pawnObj.name = "pawn[" + gridY + "][" + gridX + "]";
 
 			this.type = type;
 			this.side = side;
@@ -107,10 +108,10 @@ public class MainState : ScreenBase {
 
 			if (_obj != null) {
 				if (!justUnRef) {
-					Destroy(_obj);
+					Destroy(_obj.gameObject);
 				} else {
 					if (message.Length > 0) {
-						_obj.SendMessage(message, msgParam);
+						_obj.gameObject.SendMessage(message, msgParam);
 					}
 				}
 				
@@ -155,7 +156,7 @@ public class MainState : ScreenBase {
 		private void posUpdated() {
 			if (_obj != null) {
 				Vector2 posInChessBoard = _container._chessBoard.convertIndexToPosInBoard((int)_gridPos.x, (int)_gridPos.y);
-				_obj.transform.localPosition = new Vector3(posInChessBoard.x, posInChessBoard.y, 0);
+				_obj.gameObject.transform.localPosition = new Vector3(posInChessBoard.x, posInChessBoard.y, 0);
 			}
 		}
 
@@ -164,7 +165,7 @@ public class MainState : ScreenBase {
 			set {
 				_neighborOppositeCount = value;
 				if (_obj != null) {
-					_obj.SendMessage("setNeighborCountMark", value);
+					_obj.setNeighborCountMark(value, false);
 				}
 			}
 		}
@@ -174,7 +175,7 @@ public class MainState : ScreenBase {
 			set {
 				_selected = value;
 				if (_obj != null) {
-					_obj.SendMessage("select", value);
+					_obj.select(value);
 				}
 			}
 		}
@@ -184,7 +185,7 @@ public class MainState : ScreenBase {
 			set {
 				_type = value;
 				if (_obj != null) {
-					_obj.GetComponent<PawnDisplayer>().pawnType = type;
+					_obj.pawnType = type;
 				}
 			}
 		}
@@ -198,11 +199,11 @@ public class MainState : ScreenBase {
 		}
 
 		public void setLocalPosition(Vector3 position) {
-			_obj.transform.localPosition = position;
+			_obj.gameObject.transform.localPosition = position;
 		}
 				
 		private int _neighborOppositeCount;
-		private GameObject _obj;
+		private PawnDisplayer _obj;
 		private PawnType _type;
 		private MainState _container;
 		private int _gridIndex = -1;
@@ -1279,8 +1280,12 @@ public class MainState : ScreenBase {
 		_newPawnCount = InitNextPawnCount;
 		_backwardsChance = 0;
 		_trashChance = 0;
+		_lastUsedBackwardsLock = 0;
 		_score = 0;
 		_combo = 0;
+		_exp = 0;
+		_level = 1;
+		_expNextLevel = 100;
 		_gameState = GameState.WaitingPutPawn;
 		_gameMode = (parameters != null && parameters.Contains("gameMode")) ? 
 			(GameMode)parameters["gameMode"] : GameMode.AI;
@@ -1288,6 +1293,7 @@ public class MainState : ScreenBase {
 		_turn = Side.Opposite;
 
 		_gameRecord.highScore = PlayerPrefs.GetInt("high_score", 0);
+		_titleLayer.setScorePawnType(PawnType.Unknown);
 
 		resetEliminateStats();
 		pause(false);

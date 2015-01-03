@@ -8,9 +8,13 @@ public class AchieveUIItem : MonoBehaviour {
 	public Color defaultColor;
 
 	private Text _label;
+	private PawnDisplayer _firstEliminatedPawn;
+
 	// Use this for initialization
 	void Awake() {
 		_label = gameObject.GetComponent<Text>();
+		_firstEliminatedPawn = gameObject.transform.Find("Pawn1").GetComponent<PawnDisplayer>();
+		_firstEliminatedPawn.gameObject.SetActive(false);
 	}
 	
 	// Update is called once per frame
@@ -26,5 +30,13 @@ public class AchieveUIItem : MonoBehaviour {
 		}
 
 		_label.color = textColor;
+		_firstEliminatedPawn.disableSendMessage = true;
+
+		int firstPawnType = PlayerPrefs.GetInt("achieve_progress" + achieveItem.id + "_pawn_type0", -1);
+		_firstEliminatedPawn.gameObject.SetActive(!finished && !achieveItem.initFinished && firstPawnType >= 0);
+		if (_firstEliminatedPawn.gameObject.activeSelf) {
+			_firstEliminatedPawn.pawnType = (MainState.PawnType)firstPawnType;
+			_firstEliminatedPawn.setNeighborCountMark(achieveItem.parameters[0], true);
+		}
 	}
 }

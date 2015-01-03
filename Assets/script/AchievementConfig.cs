@@ -96,9 +96,17 @@ public class AchievementConfig
 						if (progress == 3) {
 							finishedAchieves.Add(item.id);
 							justFinishedAchieveIds.Add(item.id);
+							PlayerPrefs.SetString("achieve_finish_time" + item.id, System.DateTime.Now.Ticks.ToString());
 						}
 
 						PlayerPrefs.SetInt("achieve_progress_" + item.id, progress);
+
+						int firstPawnType = PlayerPrefs.GetInt("achieve_progress" + item.id + "_pawn_type0", -1);
+						if (firstPawnType == -1) {
+							PlayerPrefs.SetInt("achieve_progress" + item.id + "_pawn_type0", pawnType);
+						} else {
+							PlayerPrefs.SetInt("achieve_progress" + item.id + "_pawn_type1", pawnType);
+						}
 					}
 				}
 			}
