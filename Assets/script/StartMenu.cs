@@ -1,12 +1,17 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 public class StartMenu : ScreenBase {
 	private void updateToggleState() {
 		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
-		MainState mainState = gameMainUI.GetComponent<MainState>();
-		bool showResume = mainState != null && mainState.paused();
+		bool showResume = false;
+
+		if (gameMainUI != null) {
+			MainState mainState = gameMainUI.GetComponent<MainState>();
+			showResume = mainState != null && mainState.paused();
+		}
 
 		Transform resumeButton = gameObject.transform.Find("ButtonLayer/Resume");
 		resumeButton.gameObject.SetActive(showResume);
@@ -35,20 +40,7 @@ public class StartMenu : ScreenBase {
 		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
 		ScreenManager.show(gameMainUI, true);
 		gameMainUI.GetComponent<MainState>().restart(parameters);
-	}
-
-	public void onQuit() {
-		if (Application.isEditor) {
-			onResume();
-			return;
-		}
-
-		if (Application.platform == RuntimePlatform.IPhonePlayer) {
-			// TODO: show confirm on iphone
-			Application.Quit();
-		} else {
-			Application.Quit();
-		}
+		GameApp.clearSave();
 	}
 
 	public void onResume() {

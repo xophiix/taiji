@@ -35,7 +35,7 @@ public class AchieveUIItem : MonoBehaviour {
 		int firstPawnType = PlayerPrefs.GetInt("achieve_progress" + achieveItem.id + "_pawn_type0", -1);
 		_firstEliminatedPawn.gameObject.SetActive(!finished && !achieveItem.initFinished && firstPawnType >= 0);
 		if (_firstEliminatedPawn.gameObject.activeSelf) {
-			_firstEliminatedPawn.pawnType = (MainState.PawnType)firstPawnType;
+			_firstEliminatedPawn.pawnType = (PawnType)firstPawnType;
 			_firstEliminatedPawn.setNeighborCountMark(achieveItem.parameters[0], true);
 		}
 	}

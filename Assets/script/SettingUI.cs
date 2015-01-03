@@ -25,6 +25,7 @@ public class SettingUI : ScreenBase {
 	}
 
 	public void onToggleSound() {
+		SoundHub.instance().play("ButtonClick");
 		Toggle toggle = gameObject.transform.Find("ContentLayer/SettingLayer/ToggleSound").GetComponent<Toggle>();
 		SoundHub.instance().muteSound(!toggle.isOn);
 		PlayerPrefs.SetInt("sound", toggle.isOn ? 1 : 0);
@@ -32,6 +33,7 @@ public class SettingUI : ScreenBase {
 	}
 
 	public void onToggleMusic() {
+		SoundHub.instance().play("ButtonClick");
 		Toggle toggle = gameObject.transform.Find("ContentLayer/SettingLayer/ToggleMusic").GetComponent<Toggle>();
 		SoundHub.instance().muteMusic(!toggle.isOn);
 		PlayerPrefs.SetInt("music", toggle.isOn ? 1 : 0);

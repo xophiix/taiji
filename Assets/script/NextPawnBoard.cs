@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 
 public class NextPawnBoard : MonoBehaviour {
-	private ArrayList _pawns;
+	private List<PawnType> _pawns = new List<PawnType>();
 	private List<GameObject> _pawnImages;
 	public GameObject nextPawnPrefab;
 	public Sprite blackPawnSprite;
@@ -91,7 +91,7 @@ public class NextPawnBoard : MonoBehaviour {
 				position.x = Span.x + col * (_gridSize.x + Span.x) + _gridSize.x / 2;
 
 				pawnImage.transform.localPosition = position;
-				pawnImage.GetComponent<Image>().sprite = (MainState.PawnType)_pawns[i] == MainState.PawnType.Black ? blackPawnSprite : whitePawnSprite;
+				pawnImage.GetComponent<Image>().sprite = (PawnType)_pawns[i] == PawnType.Black ? blackPawnSprite : whitePawnSprite;
 			}
 		}
 	}
@@ -100,8 +100,9 @@ public class NextPawnBoard : MonoBehaviour {
 
 	}
 
-	public void setNextPawns(ArrayList pawns) {
-		_pawns = (ArrayList)pawns.Clone();
+	public void setNextPawns(List<PawnType> pawns) {
+		_pawns.Clear();
+		_pawns.AddRange(pawns);
 		onNextPawnUpdated();
 	}
 

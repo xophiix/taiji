@@ -22,7 +22,7 @@ public class PawnDisplayer : MonoBehaviour {
 	float MARK_DISTANCE;
 	const float MARK_RADIAN_UNIT = Mathf.PI / 4;
 
-	public MainState.PawnType pawnType = MainState.PawnType.Black;
+	public PawnType pawnType = PawnType.Black;
 	public Sprite whitePawn;
 	public Sprite whitePawnMark;
 	public Sprite blackPawn;
@@ -47,7 +47,7 @@ public class PawnDisplayer : MonoBehaviour {
 	void Start() {
 		Sprite pawnImage = blackPawn;
 		Sprite pawnMarkImage = whitePawnMark;
-		if (pawnType == MainState.PawnType.White) {
+		if (pawnType == PawnType.White) {
 			pawnImage = whitePawn;
 			pawnMarkImage = blackPawnMark;
 		}

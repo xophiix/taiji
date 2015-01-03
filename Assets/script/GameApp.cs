@@ -2,10 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class GameInit : MonoBehaviour {
-	private static GameInit _instance;
+public class GameApp : MonoBehaviour {
+	private static GameApp _instance;
 	private HashSet<int> _finishedAchieves = new HashSet<int>();
-	public static GameInit instance() {
+	public static GameApp instance() {
 		return _instance;
 	}
 
@@ -16,6 +16,31 @@ public class GameInit : MonoBehaviour {
 	}
 
 	void Start() {
+		string saveDataFile = gameTempSavePath;
+		if (System.IO.File.Exists(saveDataFile)) {
+			// load game save and goto game main ui directly
+			GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
+			MainState mainState = gameMainUI.GetComponent<MainState>();
+			try {
+				GameSaveData saveData = (GameSaveData)PlatformUtils.readObject(saveDataFile, typeof(GameSaveData));
+				ScreenManager.show(gameMainUI, true);
+				mainState.restart();
+				mainState.loadGame(saveData);
+
+				clearSave();
+				return;
+			} catch (System.Exception e) {
+				if (Application.isEditor) {
+					throw e;
+				}
+
+				Debug.Log(e.ToString());
+				ScreenManager.show(gameMainUI, false);
+			} finally {
+				System.IO.File.Delete(saveDataFile);
+			}
+		}
+
 		ScreenManager.instance().show("StartMenu", true);
 	}
 
@@ -73,5 +98,59 @@ public class GameInit : MonoBehaviour {
 		}
 
 		PlayerPrefs.Save();
+	}
+
+	void Update() {
+		if (Input.GetKeyDown(KeyCode.Escape)) {
+			quit();
+		}
+	}
+
+	void OnApplicationQuit() {
+		Debug.Log("on application quit");
+		if (!Application.isMobilePlatform) {
+			saveGame();
+		}
+	}
+
+	void OnApplicationPause() {
+		Debug.Log("on application pause");
+		if (Application.isMobilePlatform) {
+			saveGame();
+		}
+	}
+
+	void OnApplicationFocus(bool focusStatus) {
+		Debug.Log("on application focus " + focusStatus);
+	}
+
+	public static void saveGame() {
+		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
+		if (gameMainUI != null) {
+			MainState mainState = gameMainUI.GetComponent<MainState>();
+			if (gameMainUI.activeSelf || mainState.paused()) {
+				GameSaveData saveData = mainState.saveGame();
+				Debug.Log("save game " + saveData);
+				PlatformUtils.writeObject(gameTempSavePath, saveData);
+			}
+		}
+	}
+
+	public static void clearSave() {
+		System.IO.File.Delete(gameTempSavePath);
+	}
+
+	public static string gameTempSavePath {
+		get {
+			return Application.persistentDataPath + "/game_temp_save";
+		}
+	}
+
+	public static void quit() {
+		if (Application.isEditor) {
+			return;
+		}
+
+		ScreenManager.instance().show("ExitConfirm", true);
 	}
 }

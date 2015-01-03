@@ -25,12 +25,6 @@ public class MainState : ScreenBase {
 		Player,
 		Count
 	};
-
-	public enum PawnType {
-		Black,
-		White,
-		Unknown,
-	};
 	
 	public enum Side {
 		Self,
@@ -47,7 +41,7 @@ public class MainState : ScreenBase {
 	public GameState _gameState = GameState.WaitingPutPawn;
 	private bool _paused;
 	private GameMode _gameMode = GameMode.AI;
-	private ArrayList _nextPawnTypes = new ArrayList();
+	private List<PawnType> _nextPawnTypes = new List<PawnType>();
 	private ArrayList[] _lastPutPawns = new ArrayList[(int)Side.Count];
 	private int _score;
 	private int _exp = 0;
@@ -239,15 +233,18 @@ public class MainState : ScreenBase {
 	private MainTitleLayer _titleLayer;
 	private NextPawnBoard _nextPawnBoard;
 	private bool _initialUpdateUI = true;
-	
+	private bool _gameStarted = false;
 	void Awake() {
 		base.Awake();
-
 		preInit();
+
+		init();
+		_gameStarted = true;
 	}
 
 	void Start() {
-		init();
+		//init();
+		//_gameStarted = true;
 	}
 
 	public override void onShow(bool show) {
@@ -882,11 +879,11 @@ public class MainState : ScreenBase {
 	private void checkAchieve(int eliminateNeighborCount, PawnType pawnType) {
 		int[] parameters = new int[]{ eliminateNeighborCount, (int)pawnType };
 		List<int> newlyFinishedAchieves = AchievementConfig.instance().checkAchieve(
-			AchievementConfig.Condition.CLEAR_BY_TYPE, parameters, GameInit.instance().finishedAchieves);
+			AchievementConfig.Condition.CLEAR_BY_TYPE, parameters, GameApp.instance().finishedAchieves);
 
 		if (newlyFinishedAchieves.Count > 0) {
 			_newlyFinishedAchieves.AddRange(newlyFinishedAchieves);
-			GameInit.instance().saveAchieveChange();
+			GameApp.instance().saveAchieveChange();
 		}
 	}
 
@@ -1293,7 +1290,9 @@ public class MainState : ScreenBase {
 		_turn = Side.Opposite;
 
 		_gameRecord.highScore = PlayerPrefs.GetInt("high_score", 0);
-		_titleLayer.setScorePawnType(PawnType.Unknown);
+		if (_titleLayer != null) {
+			_titleLayer.setScorePawnType(PawnType.Unknown);
+		}
 
 		resetEliminateStats();
 		pause(false);
@@ -1304,7 +1303,9 @@ public class MainState : ScreenBase {
 	}
 
 	void triggerUpdateUI() {
-		updateUI(true);
+		if (_gameStarted) {
+			updateUI(true);
+		}
 	}
 
 	private void initTraverseIndice() {
@@ -1433,4 +1434,61 @@ public class MainState : ScreenBase {
 	}
 
 	#endregion
+
+	public GameSaveData saveGame() {
+		GameSaveData saveData = new GameSaveData();
+		foreach (Pawn pawn in _pawns) {
+			GameSaveData.PawnState pawnState = new GameSaveData.PawnState();
+			pawnState.type = pawn.type;
+			pawnState.gridIndex = pawn.gridIndex;
+			pawnState.side = pawn.side;
+
+			saveData.pawns.Add(pawnState);
+		}
+
+		saveData.combo = _combo;
+		saveData.score = _score;
+		saveData.exp = _exp;
+		saveData.level = _level;
+		saveData.turn = _gameRecord.turns;
+		saveData.side = _turn;
+		saveData.lastScoredPawnType = _titleLayer.getScorePawnType();
+		
+		for (int i = 0; i < _nextPawnTypes.Count; ++i) {
+			saveData.nextPawns.Add(_nextPawnTypes[i]);
+		}
+
+		saveData.trashChance = _trashChance;
+		saveData.backwardsChance = _backwardsChance;
+		return saveData;
+	}
+
+	public void loadGame(GameSaveData saveData) {
+		foreach (GameSaveData.PawnState pawnState in saveData.pawns) {
+			Vector2 gridPos = _chessBoard.gridIndexToPos(pawnState.gridIndex);
+			putPawn((int)gridPos.x, (int)gridPos.y, pawnState.type, pawnState.side, true);
+		}
+
+		_combo = saveData.combo;
+		_score = saveData.score;
+		_exp = saveData.exp;
+		_level = saveData.level;
+		_expNextLevel = 100 + 50 * (_level - 1);
+		_turn = saveData.side;
+		_trashChance = saveData.trashChance;
+		_backwardsChance = saveData.backwardsChance;
+		_titleLayer.setScorePawnType(saveData.lastScoredPawnType);
+
+		_gameState = GameState.WaitingPutPawn;
+
+		_newPawnCount = saveData.nextPawns.Count;
+		_nextPawnTypes.Clear();
+		for (int i = 0; i < _newPawnCount; ++i) {
+			_nextPawnTypes.Add(saveData.nextPawns[i]);
+		}
+
+		_nextPawnStateInvalid = true;
+		invalidUI();
+		updateScenePawnState(false);
+	}
 }

@@ -116,6 +116,10 @@ public class AchievementUI : ScreenBase {
 			return;
 		}
 
+		if (!_achieveInfoLayer.gameObject.activeSelf) {
+			_achieveInfoLayerCanvas.alpha = 0;
+		}
+
 		_achieveInfoLayer.gameObject.SetActive(true);
 
 		bool fadingOut = false;
@@ -133,7 +137,6 @@ public class AchievementUI : ScreenBase {
 		Image icon = _achieveIcons[achieveId - 1];
 		_achieveIconGlow.gameObject.SetActive(true);
 		_achieveIconGlow.transform.localPosition = icon.gameObject.transform.localPosition;
-		// TODO: glow effect
 
 		if (!fadingOut) {
 			fillAchieveInfo(achieveId);
@@ -164,9 +167,9 @@ public class AchievementUI : ScreenBase {
 			int secondPawnType = PlayerPrefs.GetInt("achieve_progress" + achieveId + "_pawn_type1");
 			
 			int neighborMark = achieveItem.parameters[0];
-			_achieveDetailFirstPawn.pawnType = (MainState.PawnType)firstPawnType;
+			_achieveDetailFirstPawn.pawnType = (PawnType)firstPawnType;
 			_achieveDetailFirstPawn.setNeighborCountMark(neighborMark, true);
-			_achieveDetailSecondPawn.pawnType = (MainState.PawnType)secondPawnType;
+			_achieveDetailSecondPawn.pawnType = (PawnType)secondPawnType;
 			_achieveDetailSecondPawn.setNeighborCountMark(neighborMark, true);
 		}
 	}
