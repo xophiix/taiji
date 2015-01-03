@@ -99,7 +99,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01cba841319104bdaa7561aec211470a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: MORE
+  title: ACHIEVEMENTS
 --- !u!114 &11400002
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -112,7 +112,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: .150563151, g: .15055865, b: .150561213, a: 1}
+  m_Color: {r: .150563151, g: .15055865, b: .150561213, a: .879999995}
   m_FontData:
     m_Font: {fileID: 12800000, guid: 0641f70606a9a479f94379cb80ae90b9, type: 3}
     m_FontSize: 26

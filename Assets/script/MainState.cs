@@ -770,7 +770,7 @@ public class MainState : ScreenBase {
 	}
 
 	private int calculateScore(ArrayList adjacentPawnList, int combo) {
-		// score = 2 ^ (maxNeighborCount + 1) * 2 ^ (N - 3) * 2 ^ combo;
+		// score = 2 ^ (maxNeighborCount + 1) * 2 ^ (N - 3) * 2 ^ (combo - 1);
 		bool[] typeFlag = new bool[9];
 		int typeCount = 0;
 		int maxNeighborCount = 0;
@@ -791,7 +791,11 @@ public class MainState : ScreenBase {
 			score *= (int)Mathf.Pow(2, adjacentPawnList.Count - ADJACENT_COUNT_TO_ELIMINATE);
 		}
 
-		int comboScale = (int)Mathf.Pow(2, combo);
+		if (combo <= 0) {
+			combo = 1;
+		}
+
+		int comboScale = (int)Mathf.Pow(2, combo - 1);
 		return score * comboScale;
 	}
 
@@ -976,8 +980,6 @@ public class MainState : ScreenBase {
 
 		if (pawnList.Count >= BACKWARDS_GAIN_ELIMINATE_PAWN_PER_MOVE) {
 			modifyBackwardsChance(1);
-			levelUpDirectly(true);
-			invalidUI();
 		}
 
 		if (!_eliminateStats.trashChanceGained) {
@@ -1002,8 +1004,6 @@ public class MainState : ScreenBase {
 
 			if (eliminateRowCount >= TRASH_GAIN_ELIMINATE_ROW_PER_MOVE) {
 				modifyTrashChance(1);
-				levelUpDirectly(true);
-				invalidUI();
 				_eliminateStats.trashChanceGained = true;
 			}
 		}

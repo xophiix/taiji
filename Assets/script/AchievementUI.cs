@@ -24,9 +24,6 @@ public class AchievementUI : ScreenBase {
 	}
 
 	public void onTapScreen() {
-		if (fromScreen == "GameMainUI") {
-			onBack();
-		}
 	}
 
 	public void onBack() {
@@ -41,8 +38,8 @@ public class AchievementUI : ScreenBase {
 			closeAnim = "SlideOutReverse";
 			openAnim = "SlideInReverse";
 		} else {
-			closeAnim = "ScreenOut";
-			openAnim = "ScreenIn";
+			closeAnim = "SlideOut";
+			openAnim = "SlideIn";
 		}
 
 		ScreenManager.show(gameObject, false, closeAnim);

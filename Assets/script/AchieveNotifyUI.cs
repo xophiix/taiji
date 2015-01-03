@@ -36,7 +36,7 @@ public class AchieveNotifyUI : ScreenBase {
 	public void onGotoAchievement() {
 		if (_displayIndex >= _finishedAchieves.Count) {
 			ScreenManager.show(gameObject, false);
-			ScreenManager.instance().show("AchievementUI", true, "ScreenIn");
+			ScreenManager.instance().show("AchievementUI", true, "SlideIn");
 			ScreenManager.instance().get("AchievementUI").GetComponent<AchievementUI>().fromScreen = "GameMainUI";
 		}
 	}
