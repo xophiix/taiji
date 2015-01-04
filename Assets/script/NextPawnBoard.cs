@@ -100,6 +100,10 @@ public class NextPawnBoard : MonoBehaviour {
 
 	}
 
+	void OnDisable() {
+
+	}
+
 	public void setNextPawns(List<PawnType> pawns) {
 		_pawns.Clear();
 		_pawns.AddRange(pawns);

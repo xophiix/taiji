@@ -205,8 +205,8 @@ public class MainState : ScreenBase {
 		private bool _selected;
 	};
 
-	private ArrayList _pawns = new ArrayList();
-	private ArrayList _pawnListToEliminate = new ArrayList();
+	private List<Pawn> _pawns = new List<Pawn>();
+	private List<AdjacentPawnList> _pawnListToEliminate = new List<AdjacentPawnList>();
 	private Pawn[] _grids;
 	
 	private GameRecord _gameRecord = new GameRecord();
@@ -340,12 +340,9 @@ public class MainState : ScreenBase {
 			}
 		}
 
-		/*int[] testGridIndice = new int[]{0, 1, 2, 8, 9, 10};
-		_gridIndiceForNextPawns.Clear();
-		for (int i = 0; i < testGridIndice.Length; ++i) {
-			Vector2 gridPos = _chessBoard.gridIndexToPos(testGridIndice[i]);
-			_gridIndiceForNextPawns.Add(gridPos);
-		}*/
+		if (debug) {
+			debugSetNextPawnPositions();
+		}
 
 		List<Vector3> positions = new List<Vector3>();
 		for (int i = 0; i < _gridIndiceForNextPawns.Count; ++i) {
@@ -578,10 +575,9 @@ public class MainState : ScreenBase {
 			_nextPawnTypes.Add(prob > 0.5 ? PawnType.Black : PawnType.White);
 		}
 
-		/*_nextPawnTypes.Clear();
-		for (int i = 0; i < 6; ++i) {
-			_nextPawnTypes.Add(PawnType.Black);
-		}*/
+		if (debug) {
+			debugPreparePawnTypes();
+		}
 
 		_nextPawnStateInvalid = true;
 		invalidUI();
@@ -767,7 +763,7 @@ public class MainState : ScreenBase {
 		return _grids[index];
 	}
 
-	private int calculateScore(ArrayList adjacentPawnList, int combo) {
+	private int calculateScore(List<Pawn> adjacentPawnList, int combo) {
 		// score = 2 ^ (maxNeighborCount + 1) * 2 ^ (N - 3) * 2 ^ (combo - 1);
 		bool[] typeFlag = new bool[9];
 		int typeCount = 0;
@@ -891,22 +887,22 @@ public class MainState : ScreenBase {
 		_gameState = GameState.JudgingElimination;
 
 		for (int i = 0; i < _pawnListToEliminate.Count; ++i) {
-			ArrayList pawnList = (ArrayList)_pawnListToEliminate[i];
+			AdjacentPawnList pawnList = _pawnListToEliminate[i];
 			concludeEliminateStats(pawnList);
-			int addedScore = calculateScore(pawnList, _combo);
+			int addedScore = calculateScore(pawnList.finalList, _combo);
 
-			Pawn firstPawn = (Pawn)pawnList[0];
+			Pawn firstPawn = pawnList.finalList[0];
 			modifyScore(addedScore, firstPawn.type);
 			checkAchieve(firstPawn.neighborOppositeCount, firstPawn.type);
 
 			int eliminateSoundLevel = firstPawn.neighborOppositeCount / 2 + 1;
 			SoundHub.instance().play("Eliminate" + eliminateSoundLevel);
 
-			foreach (Pawn pawn in pawnList) {
+			foreach (Pawn pawn in pawnList.finalList) {
 				pawn.destroy(true, "eliminate");
 			}
 
-			pawnList.Clear();
+			pawnList.finalList.Clear();
 			yield return new WaitForSeconds(0.3f);
 		}
 
@@ -929,6 +925,7 @@ public class MainState : ScreenBase {
 	
 	public class EliminateStats {
 		public int continuousEliminatePawnCount;
+		public int continuousEliminatePawnListCount;
 		public int comboByLastMove;
 		public bool trashChanceGained;
 		public bool backwardsChanceGained;
@@ -950,6 +947,7 @@ public class MainState : ScreenBase {
 
 		_eliminateStats.enableStats = true;
 		_eliminateStats.continuousEliminatePawnCount = 0;
+		_eliminateStats.continuousEliminatePawnListCount = 0;
 		_eliminateStats.comboByLastMove = 0;
 		_eliminateStats.trashChanceGained = false;
 		_eliminateStats.backwardsChanceGained = false;
@@ -958,13 +956,14 @@ public class MainState : ScreenBase {
 		}
 	}
 
-	private void concludeEliminateStats(ArrayList pawnList) {
+	private void concludeEliminateStats(AdjacentPawnList pawnList) {
 		if (!_eliminateStats.enableStats) {
 			return;
 		}
 
 		++_eliminateStats.comboByLastMove;
-		_eliminateStats.continuousEliminatePawnCount += pawnList.Count;
+		_eliminateStats.continuousEliminatePawnCount += pawnList.finalList.Count;
+		_eliminateStats.continuousEliminatePawnListCount += pawnList.mergedLists.Count;
 
 		if (!_comboUpdatedThisTurn) {
 			++_combo;
@@ -977,31 +976,12 @@ public class MainState : ScreenBase {
 
 		invalidUI();
 
-		if (pawnList.Count >= BACKWARDS_GAIN_ELIMINATE_PAWN_PER_MOVE) {
+		if (pawnList.maxPawnInListBeforeMerge >= BACKWARDS_GAIN_ELIMINATE_PAWN_PER_MOVE) {
 			modifyBackwardsChance(1);
 		}
 
 		if (!_eliminateStats.trashChanceGained) {
-			// check two row
-			int[] pawnCountOnRow = new int[_chessBoard.GridHeight];
-			foreach (Pawn pawn in pawnList) {
-				++pawnCountOnRow[(int)pawn.gridPos.y];
-			}
-
-			for (int row = 0; row < pawnCountOnRow.Length; ++row) {
-				if (pawnCountOnRow[row] >= ADJACENT_COUNT_TO_ELIMINATE) {
-					_eliminateStats.eliminateRowFlags[row] = true;
-				}
-			}
-
-			int eliminateRowCount = 0;
-			for (int row = 0; row < _eliminateStats.eliminateRowFlags.Length; ++row) {
-				if (_eliminateStats.eliminateRowFlags[row]) {
-					++eliminateRowCount;
-				}
-			}
-
-			if (eliminateRowCount >= TRASH_GAIN_ELIMINATE_ROW_PER_MOVE) {
+			if (_eliminateStats.continuousEliminatePawnListCount >= TRASH_GAIN_ELIMINATE_ROW_PER_MOVE) {
 				modifyTrashChance(1);
 				_eliminateStats.trashChanceGained = true;
 			}
@@ -1079,8 +1059,58 @@ public class MainState : ScreenBase {
 		StartCoroutine("eliminateAdjacentPawns");
 	}
 
+	// stands for a connected adjacent pawn list
+	// maybe combined by several atomic adjacent list
+	class AdjacentPawnList {
+		public List<Pawn> finalList = new List<Pawn>();
+		public int maxPawnInListBeforeMerge;
+
+		public List<List<Pawn>> mergedLists = new List<List<Pawn>>();
+
+		override public string ToString() {
+			return "{finalListCount=" + finalList.Count 
+				+ ", mergedListCount=" + mergedLists.Count
+				+ ", maxPawnInListBeforeMerge=" + maxPawnInListBeforeMerge + "}";
+		}
+
+		public void removeOverlappedMergedLists() {
+			// sort lists by length
+			mergedLists.Sort(delegate(List<Pawn> list1, List<Pawn> list2) {
+				return list2.Count.CompareTo(list1.Count);
+			});
+
+			Dictionary<int, int> gridIndexToPawnOccupyCount = new Dictionary<int, int>();
+			for (int i = 0; i < mergedLists.Count; ++i) {
+				for (int j = 0; j < mergedLists[i].Count; ++j) {
+					int gridIndex = mergedLists[i][j].gridIndex;
+					if (gridIndexToPawnOccupyCount.ContainsKey(gridIndex)) {
+						gridIndexToPawnOccupyCount[gridIndex]++;
+					} else {
+						gridIndexToPawnOccupyCount[gridIndex] = 1;
+					}
+				}
+			}
+
+			for (int i = 0; i < mergedLists.Count; ) {
+				List<Pawn> mergedList = mergedLists[i];
+				int overlappedPawnCount = 0;
+				for (int j = 0; j < mergedList.Count; ++j) {
+					if (gridIndexToPawnOccupyCount[mergedList[j].gridIndex] > 1) {
+						overlappedPawnCount++;
+					}
+				}
+
+				if (overlappedPawnCount == mergedList.Count) {
+					mergedLists.RemoveAt(i);
+				} else {
+					++i;
+				}
+			}
+		}
+	};
+
 	struct GridFlag {
-		public ArrayList adjacentPawnList;
+		public AdjacentPawnList adjacentPawnList;
 	};
 
 	// record 
@@ -1127,7 +1157,6 @@ public class MainState : ScreenBase {
 		for (int traverseType = 0; traverseType < (int)TraverType.Count; ++traverseType) {
 			AdjacentPawnJudger judger = _adjacentJudgers[traverseType];
 			int[][] traverseIndice = _traverseIndice[traverseType];
-
 			int dim0 = traverseIndice.GetLength(0);
 			for (int i = 0; i < dim0; ++i) {
 				int[] indiceOnDim = traverseIndice[i];
@@ -1138,7 +1167,7 @@ public class MainState : ScreenBase {
 
 				for (int j = 0; j < CHECK_PAWN_TYPES.Length; ++j) {
 					PawnType checkType = CHECK_PAWN_TYPES[j];
-					ArrayList adjacentPawnList = null;
+					List<Pawn> adjacentPawnList = null;
 					Pawn lastPawn = null;
 
 					for (int k = 0; k < indiceOnDim.Length; ++k) {
@@ -1148,7 +1177,7 @@ public class MainState : ScreenBase {
 							if (lastPawn == null) {
 								lastPawn = pawn;
 								if (adjacentPawnList == null) {
-									adjacentPawnList = new ArrayList();
+									adjacentPawnList = new List<Pawn>();
 								}
 
 								adjacentPawnList.Add(pawn);
@@ -1163,7 +1192,7 @@ public class MainState : ScreenBase {
 									}
 
 									if (adjacentPawnList == null) {
-										adjacentPawnList = new ArrayList();
+										adjacentPawnList = new List<Pawn>();
 									}
 
 									adjacentPawnList.Add(pawn);
@@ -1183,10 +1212,12 @@ public class MainState : ScreenBase {
 		}
 	}
 
-	private bool checkAndAddAdjacentPawnList(PawnType checkType, ArrayList adjacentPawnList) {
+	private bool checkAndAddAdjacentPawnList(PawnType checkType, List<Pawn> adjacentPawnList) {
 		if (adjacentPawnList.Count >= ADJACENT_COUNT_TO_ELIMINATE) {
+
 			// set grid flag
-			ArrayList preCollectedAdjacentList = null;
+			AdjacentPawnList preCollectedAdjacentList = null;
+
 			foreach (Pawn pawnInAdjacent in adjacentPawnList) {
 				GridFlag gridFlag = _gridFlags[(int)checkType, pawnInAdjacent.gridIndex];
 				if (gridFlag.adjacentPawnList != null) {
@@ -1197,24 +1228,53 @@ public class MainState : ScreenBase {
 			
 			if (preCollectedAdjacentList != null) {
 				// merge adjacent list available
+				HashSet<AdjacentPawnList> differentAdjacentLists = new HashSet<AdjacentPawnList>();
+
 				foreach (Pawn pawnInAdjacent in adjacentPawnList) {
 					GridFlag gridFlag = _gridFlags[(int)checkType, pawnInAdjacent.gridIndex];
 					if (gridFlag.adjacentPawnList != null) {
 						if (gridFlag.adjacentPawnList != preCollectedAdjacentList) {
-							mergeAdjacentPawnList(checkType, preCollectedAdjacentList, gridFlag.adjacentPawnList);
+							mergeAdjacentPawnList(checkType, preCollectedAdjacentList, gridFlag.adjacentPawnList.finalList);
+							differentAdjacentLists.Add(gridFlag.adjacentPawnList);
 						}
 					} else {
 						_gridFlags[(int)checkType, pawnInAdjacent.gridIndex].adjacentPawnList = preCollectedAdjacentList;
-						preCollectedAdjacentList.Add(pawnInAdjacent);
+						preCollectedAdjacentList.finalList.Add(pawnInAdjacent);
+						differentAdjacentLists.Add(null);
 					}
 				}
+
+				foreach (AdjacentPawnList list in differentAdjacentLists) {
+					if (list != null) {
+						preCollectedAdjacentList.mergedLists.AddRange(list.mergedLists);
+					} else {
+						preCollectedAdjacentList.mergedLists.Add(adjacentPawnList);
+					}
+					 
+					if (list != null && list.maxPawnInListBeforeMerge > preCollectedAdjacentList.maxPawnInListBeforeMerge) {
+						preCollectedAdjacentList.maxPawnInListBeforeMerge = list.maxPawnInListBeforeMerge;
+					}
+				}
+
+				preCollectedAdjacentList.removeOverlappedMergedLists();
+
+				if (adjacentPawnList.Count > preCollectedAdjacentList.maxPawnInListBeforeMerge) {
+					preCollectedAdjacentList.maxPawnInListBeforeMerge = adjacentPawnList.Count;
+				}
+
+				Debug.Log ("update eliminate list:" + preCollectedAdjacentList.ToString());
 			} else {
+				AdjacentPawnList newAdjacentList = new AdjacentPawnList();
+				newAdjacentList.finalList.AddRange(adjacentPawnList);
+				newAdjacentList.maxPawnInListBeforeMerge = adjacentPawnList.Count;
+				newAdjacentList.mergedLists.Add(adjacentPawnList);
+
 				foreach (Pawn pawnInAdjacent in adjacentPawnList) {
-					_gridFlags[(int)checkType, pawnInAdjacent.gridIndex].adjacentPawnList = adjacentPawnList;
+					_gridFlags[(int)checkType, pawnInAdjacent.gridIndex].adjacentPawnList = newAdjacentList;
 				}
 				
-				Debug.Log ("add to eliminate:" + adjacentPawnList.Count + " type:" + checkType);
-				_pawnListToEliminate.Add(adjacentPawnList);
+				Debug.Log ("add eliminate list:" + newAdjacentList.ToString());
+				_pawnListToEliminate.Add(newAdjacentList);
 			}
 
 			return true;
@@ -1223,11 +1283,11 @@ public class MainState : ScreenBase {
 		return false;
 	}
 	
-	private void mergeAdjacentPawnList(PawnType type, ArrayList targetList, ArrayList srcList) {
+	private void mergeAdjacentPawnList(PawnType type, AdjacentPawnList targetList, List<Pawn> srcList) {
 		foreach (Pawn pawn in srcList) {
 			_gridFlags[(int)type, pawn.gridIndex].adjacentPawnList = targetList;
-			if (!targetList.Contains(pawn)) {
-				targetList.Add(pawn);
+			if (!targetList.finalList.Contains(pawn)) {
+				targetList.finalList.Add(pawn);
 			}
 		}
 	}
@@ -1340,23 +1400,23 @@ public class MainState : ScreenBase {
 			indice = new int[dimension0][];
 			int indexOnIndice = 0;
 			for (int row = ADJACENT_COUNT_TO_ELIMINATE - 1; row < BoardHeight; ++row) {
-				ArrayList indiceOnThisLine = new ArrayList();
+				List<int> indiceOnThisLine = new List<int>();
 				for (int r = row, c = 0; r >= 0 && c < BoardWidth; --r, ++c) {
 					int gridIndex = r * BoardWidth + c;
 					indiceOnThisLine.Add(gridIndex);
 				}
 
-				indice[indexOnIndice++] = (int[])indiceOnThisLine.ToArray(typeof(int));
+				indice[indexOnIndice++] = indiceOnThisLine.ToArray();
 			}
 
 			for (int col = 1; col < BoardWidth - ADJACENT_COUNT_TO_ELIMINATE + 1; ++col) {
-				ArrayList indiceOnThisLine = new ArrayList();
+				List<int> indiceOnThisLine = new List<int>();
 				for (int r = BoardHeight - 1, c = col; r >= 0 && c < BoardWidth; --r, ++c) {
 					int gridIndex = r * BoardWidth + c;
 					indiceOnThisLine.Add(gridIndex);
 				}
 				
-				indice[indexOnIndice++] = (int[])indiceOnThisLine.ToArray(typeof(int));
+				indice[indexOnIndice++] = indiceOnThisLine.ToArray();
 			}
 
 			indexOnIndice = 0;
@@ -1365,23 +1425,23 @@ public class MainState : ScreenBase {
 			// diagonalUp
 			indice = new int[dimension0][];
 			for (int col = BoardWidth - ADJACENT_COUNT_TO_ELIMINATE; col >= 0; --col) {
-				ArrayList indiceOnThisLine = new ArrayList();
+				List<int> indiceOnThisLine = new List<int>();
 				for (int r = 0, c = col; r < BoardHeight && c < BoardWidth; ++r, ++c) {
 					int gridIndex = r * BoardWidth + c;
 					indiceOnThisLine.Add(gridIndex);
 				}
 				
-				indice[indexOnIndice++] = (int[])indiceOnThisLine.ToArray(typeof(int));
+				indice[indexOnIndice++] = indiceOnThisLine.ToArray();
 			}
 
 			for (int row = 1; row < BoardHeight - ADJACENT_COUNT_TO_ELIMINATE + 1; ++row) {
-				ArrayList indiceOnThisLine = new ArrayList();
+				List<int> indiceOnThisLine = new List<int>();
 				for (int r = row, c = 0; r < BoardHeight && c < BoardWidth; ++r, ++c) {
 					int gridIndex = r * BoardWidth + c;
 					indiceOnThisLine.Add(gridIndex);
 				}
 				
-				indice[indexOnIndice++] = (int[])indiceOnThisLine.ToArray(typeof(int));
+				indice[indexOnIndice++] = indiceOnThisLine.ToArray();
 			}
 
 			_traverseIndice[(int)TraverType.DiagonalUp] = indice;
@@ -1491,4 +1551,24 @@ public class MainState : ScreenBase {
 		invalidUI();
 		updateScenePawnState(false);
 	}
+
+	#region debug
+	public bool debug = true;
+	void debugPreparePawnTypes() {
+		_nextPawnTypes.Clear();
+		for (int i = 0; i < 10; ++i) {
+			_nextPawnTypes.Add(PawnType.Black);
+		}
+	}
+
+	void debugSetNextPawnPositions() {
+		int[] testGridIndice = new int[]{0, 1, 2, 8, 9, 10, 16, 24, 32, 40};
+		//int[] testGridIndice = new int[]{0, 8, 10, 16, 24, 32, 40};
+		_gridIndiceForNextPawns.Clear();
+		for (int i = 0; i < testGridIndice.Length; ++i) {
+			Vector2 gridPos = _chessBoard.gridIndexToPos(testGridIndice[i]);
+			_gridIndiceForNextPawns.Add(gridPos);
+		}
+	}
+	#endregion
 }
