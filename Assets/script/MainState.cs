@@ -233,24 +233,23 @@ public class MainState : ScreenBase {
 	private MainTitleLayer _titleLayer;
 	private NextPawnBoard _nextPawnBoard;
 	private bool _initialUpdateUI = true;
-	private bool _gameStarted = false;
+
 	void Awake() {
 		base.Awake();
 		preInit();
-
 		init();
-		_gameStarted = true;
 	}
 
 	void Start() {
-		//init();
-		//_gameStarted = true;
+
 	}
 
 	void OnEnable() {
 		if (_gameState == GameState.GameOver) {
 			gameOver();
 		}
+
+		updateUI(true);
 	}
 
 	void OnDisable() {
@@ -770,7 +769,7 @@ public class MainState : ScreenBase {
 	}
 
 	private int calculateScore(List<Pawn> adjacentPawnList, int combo) {
-		// score = 2 ^ (maxNeighborCount + 1) * 2 ^ (N - 3) * 2 ^ (combo - 1);
+		// score = 2 ^ (maxNeighborCount + 1) * 2 ^ (N - 3) * combo;
 		bool[] typeFlag = new bool[9];
 		int typeCount = 0;
 		int maxNeighborCount = 0;
@@ -795,12 +794,15 @@ public class MainState : ScreenBase {
 			combo = 1;
 		}
 
-		int comboScale = (int)Mathf.Pow(2, combo - 1);
-		return score * comboScale;
+		return score * combo;
 	}
 
 	private int calculateExp(int addedScore) {
 		return addedScore;
+	}
+
+	private int calculateExpNextLevel(int level) {
+		return Mathf.FloorToInt(100 * Mathf.Pow(2.0f, level - 1));
 	}
 
 	private void modifyExp(int exp, bool noReward = false) {
@@ -808,7 +810,7 @@ public class MainState : ScreenBase {
 		while (_exp >= _expNextLevel) {
 			_exp -= _expNextLevel;
 			_level++;
-			_expNextLevel += 50;
+			_expNextLevel = calculateExpNextLevel(_level);
 			onLevelUp(noReward);
 		}
 
@@ -1371,9 +1373,7 @@ public class MainState : ScreenBase {
 	}
 
 	void triggerUpdateUI() {
-		if (_gameStarted) {
-			updateUI(true);
-		}
+		updateUI(true);
 	}
 
 	private void initTraverseIndice() {
@@ -1541,7 +1541,7 @@ public class MainState : ScreenBase {
 		_score = saveData.score;
 		_exp = saveData.exp;
 		_level = saveData.level;
-		_expNextLevel = 100 + 50 * (_level - 1);
+		_expNextLevel = calculateExpNextLevel(_level);
 		_turn = saveData.side;
 		_trashChance = saveData.trashChance;
 		_backwardsChance = saveData.backwardsChance;
