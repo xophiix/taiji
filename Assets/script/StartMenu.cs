@@ -38,8 +38,9 @@ public class StartMenu : ScreenBase {
 		parameters["gameMode"] = gameMode;
 
 		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
-		ScreenManager.show(gameMainUI, true);
 		gameMainUI.GetComponent<MainState>().restart(parameters);
+		ScreenManager.show(gameMainUI, true);
+
 		GameApp.clearSave();
 	}
 
