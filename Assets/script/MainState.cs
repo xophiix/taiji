@@ -244,11 +244,14 @@ public class MainState : ScreenBase {
 
 	}
 
-	void OnEnable() {
+	public void resume() {
+		pause(false);
 		if (_gameState == GameState.GameOver) {
 			gameOver();
 		}
+	}
 
+	void OnEnable() {
 		updateUI(true);
 	}
 

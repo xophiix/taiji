@@ -38,8 +38,8 @@ public class StartMenu : ScreenBase {
 		parameters["gameMode"] = gameMode;
 
 		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
-		gameMainUI.GetComponent<MainState>().restart(parameters);
 		ScreenManager.show(gameMainUI, true);
+		gameMainUI.GetComponent<MainState>().restart(parameters);
 
 		GameApp.clearSave();
 	}
@@ -48,7 +48,7 @@ public class StartMenu : ScreenBase {
 		ScreenManager.show(gameObject, false, "", true);
 		GameObject gameMainUI = ScreenManager.instance().get("GameMainUI");
 		ScreenManager.show(gameMainUI, true);
-		gameMainUI.GetComponent<MainState>().pause(false);
+		gameMainUI.GetComponent<MainState>().resume();
 	}
 
 	public void onSetting() {
