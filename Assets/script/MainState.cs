@@ -219,7 +219,7 @@ public class MainState : ScreenBase {
 
 	// ui
 	private ChessBoard _chessBoard;
-	private Text _scoreText;
+	private AnimateNumber _scoreText;
 	private Text _comboText;
 	private Image _nextPawnImage;
 	private ExpBar _expBar;
@@ -1321,7 +1321,7 @@ public class MainState : ScreenBase {
 		_lastPutPawns[(int)Side.Self] = new ArrayList();
 		_lastPutPawns[(int)Side.Opposite] = new ArrayList();
 
-		_scoreText = gameObject.transform.Find("ScoreLabel/Score").GetComponent<Text>();
+		_scoreText = gameObject.transform.Find("ScoreLabel/Score").GetComponent<AnimateNumber>();
 		_comboText = gameObject.transform.Find("ComboLabel/Combo").GetComponent<Text>();
 		_backChanceText = gameObject.transform.Find("TitleLayer/Backwards/Count").GetComponent<Text>();
 		_trashChanceText = gameObject.transform.Find("TitleLayer/TrashCount").GetComponent<Text>();
@@ -1366,6 +1366,7 @@ public class MainState : ScreenBase {
 
 		_nextPawnBoard.reset();
 		_expBar.reset();
+		_scoreText.reset();
 
 		resetEliminateStats();
 		pause(false);
@@ -1460,7 +1461,7 @@ public class MainState : ScreenBase {
 	}
 
 	private void updateUI(bool initial = false) {
-		_scoreText.text = _score.ToString();
+		_scoreText.setValue(_score);
 		_comboText.text = _combo.ToString() + " X";
 
 		if (_nextPawnStateInvalid) {
