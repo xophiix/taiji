@@ -44,8 +44,8 @@ public class MainState : ScreenBase {
 	private List<PawnType> _nextPawnTypes = new List<PawnType>();
 	private ArrayList[] _lastPutPawns = new ArrayList[(int)Side.Count];
 	private int _score;
-	private int _exp = 0;
-	private int _expNextLevel = 100;
+	private int _exp;
+	private int _expNextLevel;
 	private int _level = 1;
 	private int _combo;
 	private int _newPawnCount;
@@ -222,7 +222,7 @@ public class MainState : ScreenBase {
 	private Text _scoreText;
 	private Text _comboText;
 	private Image _nextPawnImage;
-	private Image _expBar;
+	private ExpBar _expBar;
 	private Text _trashChanceText;
 	private Text _backChanceText;
 	private Button _trashButton;
@@ -811,9 +811,11 @@ public class MainState : ScreenBase {
 			_exp -= _expNextLevel;
 			_level++;
 			_expNextLevel = calculateExpNextLevel(_level);
+			_expBar.setExpRatio(1.0f);
 			onLevelUp(noReward);
 		}
 
+		_expBar.setExpRatio((float)_exp / _expNextLevel);
 		invalidUI();
 	}
 
@@ -1326,7 +1328,7 @@ public class MainState : ScreenBase {
 		_backButton = gameObject.transform.Find("TitleLayer/Backwards").GetComponent<Button>();
 		_trashButton = gameObject.transform.Find("TitleLayer/Trash").GetComponent<Button>();
 		_levelText = gameObject.transform.Find("TitleLayer/Level").GetComponent<Text>();
-		_expBar = gameObject.transform.Find("TitleLayer/ExpBar").GetComponent<Image>();
+		_expBar = gameObject.transform.Find("TitleLayer/ExpBar").GetComponent<ExpBar>();
 		_titleLayer = gameObject.transform.Find("TitleLayer").GetComponent<MainTitleLayer>();
 		_nextPawnBoard = gameObject.transform.Find("NextPawnBoard").GetComponent<NextPawnBoard>();
 
@@ -1350,7 +1352,7 @@ public class MainState : ScreenBase {
 		_combo = 0;
 		_exp = 0;
 		_level = 1;
-		_expNextLevel = 100;
+		_expNextLevel = calculateExpNextLevel(_level);
 		_gameState = GameState.WaitingPutPawn;
 		_gameMode = (parameters != null && parameters.Contains("gameMode")) ? 
 			(GameMode)parameters["gameMode"] : GameMode.AI;
@@ -1363,6 +1365,7 @@ public class MainState : ScreenBase {
 		}
 
 		_nextPawnBoard.reset();
+		_expBar.reset();
 
 		resetEliminateStats();
 		pause(false);
@@ -1471,9 +1474,6 @@ public class MainState : ScreenBase {
 		_backChanceText.text = _backwardsChance.ToString();
 		_trashChanceText.text = _trashChance.ToString();
 		_levelText.text = "LEVEL " + _level;
-
-		float expScale = (float)_exp / _expNextLevel;
-		_expBar.transform.localScale = new Vector3(expScale, 1, 1);
 	}
 
 	private void updateButtonState(Button button, bool enabled, bool force = false) {
@@ -1554,6 +1554,8 @@ public class MainState : ScreenBase {
 		for (int i = 0; i < _newPawnCount; ++i) {
 			_nextPawnTypes.Add(saveData.nextPawns[i]);
 		}
+
+		_expBar.setExpRatio(_exp / _expNextLevel);
 
 		_nextPawnStateInvalid = true;
 		invalidUI();
