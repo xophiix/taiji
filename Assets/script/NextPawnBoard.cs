@@ -41,6 +41,7 @@ public class NextPawnBoard : MonoBehaviour {
 			for (int col = 0; col < GRID_COLUMN; ++col) {
 				GameObject upNextGrid = (GameObject)Instantiate(upNextGridPrefab);
 				upNextGrid.transform.SetParent(gameObject.transform);
+				upNextGrid.transform.localScale = Vector3.one;
 
 				Vector3 gridPos = new Vector3();
 				gridPos.x = Span.x + col * (_gridSize.x + Span.x);
