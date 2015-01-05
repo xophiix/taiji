@@ -20,6 +20,10 @@ public class GameOverUI : ScreenBase {
 		mainState.restart();
 	}
 
+	public void hide() {
+		ScreenManager.show(gameObject, false);
+	}
+
 	public void setGameRecord(GameRecord record) {
 		gameObject.transform.Find("Panel/StatsLayer/HighScoreTitle/HighScore").GetComponent<Text>().text = record.highScore.ToString();
 		gameObject.transform.Find("Panel/StatsLayer/ScoreTitle/Score").GetComponent<Text>().text = record.score.ToString();

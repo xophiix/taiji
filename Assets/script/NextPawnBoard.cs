@@ -100,10 +100,6 @@ public class NextPawnBoard : MonoBehaviour {
 
 	}
 
-	void OnDisable() {
-
-	}
-
 	public void setNextPawns(List<PawnType> pawns) {
 		_pawns.Clear();
 		_pawns.AddRange(pawns);
@@ -136,5 +132,21 @@ public class NextPawnBoard : MonoBehaviour {
 			_pawnImages[_movingIndex].GetComponent<NextPawnController>().moveTo(_destPositions[_movingIndex], 500f);
 			++_movingIndex;
 		}
+	}
+
+	public void reset() {
+		_pawns.Clear();
+
+		_movingIndex = 0;
+		_movingCount = 0;
+		if (_pawnImages != null) {
+			for (int i = 0; i < _pawnImages.Count; ++i) {
+				Destroy(_pawnImages[i]);
+			}
+
+			_pawnImages.Clear();
+		}
+
+		_destPositions = null;
 	}
 }

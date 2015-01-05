@@ -247,6 +247,16 @@ public class MainState : ScreenBase {
 		//_gameStarted = true;
 	}
 
+	void OnEnable() {
+		if (_gameState == GameState.GameOver) {
+			gameOver();
+		}
+	}
+
+	void OnDisable() {
+
+	}
+
 	public override void onShow(bool show) {
 		if (show) {
 			pause(false);
@@ -361,10 +371,6 @@ public class MainState : ScreenBase {
 
 	void stopWaitingOppoSide() {
 		_waitingForOppoSide = false;
-	}
-
-	void FixedUpdate() {
-
 	}
 
 	void Update() {
@@ -1353,6 +1359,8 @@ public class MainState : ScreenBase {
 		if (_titleLayer != null) {
 			_titleLayer.setScorePawnType(PawnType.Unknown);
 		}
+
+		_nextPawnBoard.reset();
 
 		resetEliminateStats();
 		pause(false);
